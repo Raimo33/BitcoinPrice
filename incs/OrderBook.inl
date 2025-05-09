@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-23 17:58:46                                                 
-last edited: 2025-04-30 15:40:07                                                
+last edited: 2025-05-09 22:25:43                                                
 
 ================================================================================*/
 
@@ -34,44 +34,22 @@ HOT ALWAYS_INLINE inline uint64_t OrderBook::getBestAskQty(void) const noexcept
   return book_sides[ASK].cumulative_qtys.back();
 }
 
-HOT ALWAYS_INLINE inline int32_t OrderBook::getEquilibriumPrice(void) const noexcept
+HOT ALWAYS_INLINE inline void OrderBook::addOrderBid(const int32_t price, const uint64_t qty)
 {
-  return equilibrium_price;
+  addOrder<std::less_equal<int32_t>>(book_sides[BID], price, qty);
 }
 
-HOT ALWAYS_INLINE inline uint64_t OrderBook::getEquilibriumBidQty(void) const noexcept
+HOT ALWAYS_INLINE inline void OrderBook::addOrderAsk(const int32_t price, const uint64_t qty)
 {
-  return equilibrium_bid_qty;
+  addOrder<std::greater_equal<int32_t>>(book_sides[ASK], price, qty);
 }
 
-HOT ALWAYS_INLINE inline uint64_t OrderBook::getEquilibriumAskQty(void) const noexcept
+HOT ALWAYS_INLINE inline void OrderBook::removeOrderBid(const int32_t price, const uint64_t qty)
 {
-  return equilibrium_ask_qty;
+  removeOrder<std::less_equal<int32_t>>(book_sides[BID], price, qty);
 }
 
-inline void OrderBook::setEquilibrium(const int32_t price, const uint64_t bid_qty, const uint64_t ask_qty) noexcept
+HOT ALWAYS_INLINE inline void OrderBook::removeOrderAsk(const int32_t price, const uint64_t qty)
 {
-  equilibrium_price = price;
-  equilibrium_bid_qty = bid_qty;
-  equilibrium_ask_qty = ask_qty;
-}
-
-HOT ALWAYS_INLINE inline void OrderBook::addOrderBid(const uint64_t id, const int32_t price, const uint64_t qty)
-{
-  addOrder<std::less_equal<int32_t>>(book_sides[BID], id, price, qty);
-}
-
-HOT ALWAYS_INLINE inline void OrderBook::addOrderAsk(const uint64_t id, const int32_t price, const uint64_t qty)
-{
-  addOrder<std::greater_equal<int32_t>>(book_sides[ASK], id, price, qty);
-}
-
-HOT ALWAYS_INLINE inline void OrderBook::removeOrderBid(const uint64_t id, const int32_t price, const uint64_t qty)
-{
-  removeOrder<std::less_equal<int32_t>>(book_sides[BID], id, price, qty);
-}
-
-HOT ALWAYS_INLINE inline void OrderBook::removeOrderAsk(const uint64_t id, const int32_t price, const uint64_t qty)
-{
-  removeOrder<std::greater_equal<int32_t>>(book_sides[ASK], id, price, qty);
+  removeOrder<std::greater_equal<int32_t>>(book_sides[ASK], price, qty);
 }

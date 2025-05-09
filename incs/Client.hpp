@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-23 17:58:46                                                 
-last edited: 2025-05-09 20:42:19                                                
+last edited: 2025-05-09 22:25:43                                                
 
 ================================================================================*/
 
@@ -13,7 +13,7 @@ last edited: 2025-05-09 20:42:19
 
 #include <string_view>
 #include <string>
-
+#include <yyjson.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
@@ -48,5 +48,10 @@ class Client
 
     void connect(void);
     void listen(void);
-    void process_market_data(std::string_view data);
+
+    static void processMarketData(std::string_view data);
+    static void processOrder(yyjson_val *order);
+
+    static void handleTrade(const OrderBook::Side side, const int32_t price, const uint64_t qty);
+    static void handleChange(const OrderBook::Side side, const int32_t price, const uint64_t qty);
 };

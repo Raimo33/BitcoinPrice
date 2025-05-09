@@ -49,8 +49,8 @@ CXXFLAGS += -fno-plt -fuse-linker-plugin -flto
 
 CXXFLAGS += -I$(INCS_DIR)
 
-# LDFLAGS := -static -static-libgcc -static-libstdc++
-LDLIBS := -ljemalloc -lboost_system -lboost_exception -lssl -lcrypto
+LDFLAGS := #TODO -static -static-libgcc -static-libstdc++
+LDLIBS := -ljemalloc -lboost_system -lboost_exception -lssl -lcrypto -lyyjson
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@

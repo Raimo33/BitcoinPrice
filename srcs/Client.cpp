@@ -5,9 +5,11 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 15:48:16                                                 
-last edited: 2025-05-09 20:42:19                                                
+last edited: 2025-05-09 22:25:43                                                
 
 ================================================================================*/
+
+#include <yyjson.h>
 
 #include "Client.hpp"
 #include "utils/utils.hpp"
@@ -45,7 +47,6 @@ COLD void Client::connect(void)
   auto &socket = beast::get_lowest_layer(ws_stream);
   socket.set_option(net::ip::tcp::no_delay(true));
   socket.set_option(net::socket_base::keep_alive(true));
-  socket.non_blocking(true);
   socket.native_non_blocking(true);
 
   //TODO remove
@@ -73,13 +74,70 @@ HOT void Client::listen(void)
       reinterpret_cast<const char*>(buffer.data().data()),
       buffer.data().size()
     };
-    process_market_data(data);
+    processMarketData(data);
 
     buffer.consume(buffer.size());
   }
 }
 
-HOT void Client::process_market_data(std::string_view data)
+HOT void Client::processMarketData(std::string_view data)
 {
+  static bool error = false;
+
   printf("%s\n", data.data());
+
+  yyjson_doc *doc = yyjson_read_opts(const_cast<char*>(data.data()), data.size(), YYJSON_READ_ALLOW_TRAILING_COMMAS, nullptr, nullptr);
+  error |= (doc == nullptr);
+
+  yyjson_val *root = yyjson_doc_get_root(doc);
+  error |= (root == nullptr);
+
+  if (error) [[unlikely]]
+    utils::throw_exception("Failed to parse JSON data");
+
+  if (yyjson_is_arr(root)) [[likely]]
+  {
+    size_t idx, max;
+    yyjson_val *update;
+    yyjson_arr_foreach(root, idx, max, update)
+      processOrder(update);
+  }
+  else if (yyjson_is_obj(root))
+    processOrder(root);
+
+  yyjson_doc_free(doc);
+}
+
+HOT void Client::processOrder(yyjson_val *order)
+{
+  const char *type_str = yyjson_get_str(yyjson_obj_get(order, "type"));
+  const char *side_str = yyjson_get_str(yyjson_obj_get(order, "side"));
+  const char *price_str = yyjson_get_str(yyjson_obj_get(order, "price"));
+  const char *qty_str = yyjson_get_str(yyjson_obj_get(order, "delta"));
+
+  printf("side: %s, type: %s, price: %s, qty: %s\n", side_str, type_str, price_str, qty_str);
+  exit(1);
+
+  const OrderBook::Side side = static_cast<OrderBook::Side>(side_str[0] == 'a');
+  const int32_t price = 100; //TODO get actual price, float to int32_t
+  const uint64_t qty = 100; //TODO get actual qty
+
+  using Handler = void (*)(const OrderBook::Side, const int32_t, const uint64_t);
+  static constexpr std::array<Handler, 2> handlers = {
+    &Client::handleChange,
+    &Client::handleTrade
+  };
+
+  const bool is_trade = (type_str[0] == 't');
+  handlers[is_trade](side, price, qty);
+}
+
+HOT void Client::handleTrade(const OrderBook::Side side, const int32_t price, const uint64_t qty)
+{
+  printf("received trade: %s %d %lu\n", side == OrderBook::BID ? "BID" : "ASK", price, qty);
+}
+
+HOT void Client::handleChange(const OrderBook::Side side, const int32_t price, const uint64_t qty)
+{
+  printf("received change: %s %d %lu\n", side == OrderBook::BID ? "BID" : "ASK", price, qty);
 }
