@@ -1,0 +1,10 @@
+srcs/GeminiMarketDataClient.o: srcs/GeminiMarketDataClient.cpp \
+ incs/GeminiMarketDataClient.hpp incs/OrderBook.hpp incs/macros.hpp \
+ incs/OrderBook.inl incs/error.hpp incs/error.inl incs/utils/utils.hpp
+incs/GeminiMarketDataClient.hpp:
+incs/OrderBook.hpp:
+incs/macros.hpp:
+incs/OrderBook.inl:
+incs/error.hpp:
+incs/error.inl:
+incs/utils/utils.hpp:
