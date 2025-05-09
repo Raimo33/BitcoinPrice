@@ -85,11 +85,13 @@ HOT void OrderBook::addOrder(PriceLevels &levels, const int32_t price, const uin
   cumulative_qty += qty;
 }
 
-HOT void OrderBook::addPriceLevel(PriceLevels &levels, const size_t price_idx)
+HOT void OrderBook::addPriceLevel(PriceLevels &levels, const size_t price_idx, price)
 {
   auto &prices = levels.prices;
+  auto &cumulative_qtys = levels.cumulative_qtys;
 
-  prices.insert(prices.cbegin() + price_idx, 0);
+  prices.insert(prices.cbegin() + price_idx, price);
+  cumulative_qtys.insert(cumulative_qtys.begin() + price_idx, 0)
 }
 
 template<typename Comparator>
