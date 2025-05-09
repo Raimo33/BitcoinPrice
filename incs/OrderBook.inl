@@ -13,9 +13,6 @@ last edited: 2025-04-30 15:40:07
 
 #include "OrderBook.hpp"
 #include "macros.hpp"
-#include "error.hpp"
-
-extern volatile bool error;
 
 HOT ALWAYS_INLINE inline int32_t OrderBook::getBestBidPrice(void) const noexcept
 {

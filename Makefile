@@ -1,9 +1,9 @@
-TARGET := OrderBook
+TARGET := BitcoinPrice
 
 INCS_DIR := incs
 SRCS_DIR := srcs
 
-SRCS := $(addprefix $(SRCS_DIR)/, main.cpp GeminiMarketDataClient.cpp OrderBook.cpp error.cpp)
+SRCS := $(addprefix $(SRCS_DIR)/, main.cpp Client.cpp OrderBook.cpp utils.cpp)
 OBJS := $(SRCS:.cpp=.o)
 DEPS := $(OBJS:.o=.d)
 
@@ -13,9 +13,9 @@ CXXFLAGS += -std=c++23
 #warnings
 CXXFLAGS += -Wall -Wextra -pedantic
 #architecture
-CXXFLAGS += -march=znver2 -mtune=znver2
+CXXFLAGS += -march=native -mtune=native
 #promises
-CXXFLAGS += -fomit-frame-pointer -fno-exceptions -fno-rtti -fstrict-aliasing -fno-math-errno -fno-stack-protector
+CXXFLAGS += -fomit-frame-pointer -fno-rtti -fstrict-aliasing -fno-math-errno -fno-stack-protector
 
 # #overall settings
 CXXFLAGS += -funit-at-a-time -fexpensive-optimizations -fvect-cost-model=dynamic
@@ -49,8 +49,8 @@ CXXFLAGS += -fno-plt -fuse-linker-plugin -flto
 
 CXXFLAGS += -I$(INCS_DIR)
 
-LDFLAGS := -static -static-libgcc -static-libstdc++
-LDLIBS := -ljemalloc -lboost_system -lssl -lcrypto
+# LDFLAGS := -static -static-libgcc -static-libstdc++
+LDLIBS := -ljemalloc -lboost_system -lboost_exception -lssl -lcrypto
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@

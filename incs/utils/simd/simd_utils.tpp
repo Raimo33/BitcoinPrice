@@ -16,6 +16,7 @@ last edited: 2025-04-08 20:09:05
 #include <immintrin.h>
 #include <cstdint>
 #include <type_traits>
+#include <functional>
 
 #include "simd_utils.hpp"
 #include "macros.hpp"

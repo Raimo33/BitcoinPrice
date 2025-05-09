@@ -14,9 +14,6 @@ last edited: 2025-04-24 12:40:43
 #include "OrderBook.hpp"
 #include "utils/utils.hpp"
 #include "macros.hpp"
-#include "error.hpp"
-
-extern volatile bool error;
 
 COLD OrderBook::OrderBook(void) noexcept :
   equilibrium_price(INT32_MIN),

@@ -11,21 +11,16 @@ last edited: 2025-04-24 12:40:43
 
 #include <csignal>
 
-#include "GeminiMarketDataClient.hpp"
-#include "error.hpp"
-
-volatile bool error = false;
+#include "Client.hpp"
+#include "utils/utils.hpp"
 
 void init_signal_handler(void);
 
-int main(int argc, UNUSED char **argv)
+int main(void)
 {
-  if (argc != 3)
-    return 1;
-
   init_signal_handler();
 
-  GeminiMarketDataClient client("BTCUSD");
+  Client client("BTCUSD");
   client.run();
 }
 
@@ -33,12 +28,15 @@ COLD void init_signal_handler(void)
 {
   struct sigaction sa{};
 
-  sa.sa_handler = [](int) { panic(); };
+  sa.sa_handler = [](int) { std::terminate(); };
+
+  bool error = false;
 
   error |= sigaction(SIGINT, &sa, nullptr) == -1;
   error |= sigaction(SIGTERM, &sa, nullptr) == -1;
   error |= sigaction(SIGQUIT, &sa, nullptr) == -1;
   error |= sigaction(SIGPIPE, &sa, nullptr) == -1;
 
-  CHECK_ERROR;
+  if (error)
+    utils::throw_exception("Failed to set signal handler");
 }
