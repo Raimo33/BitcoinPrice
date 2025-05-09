@@ -15,7 +15,7 @@ CXXFLAGS += -Wall -Wextra -pedantic
 #architecture
 CXXFLAGS += -march=native -mtune=native
 #promises
-CXXFLAGS += -fomit-frame-pointer -fno-rtti -fstrict-aliasing -fno-math-errno -fno-stack-protector
+CXXFLAGS += -fomit-frame-pointer -fno-rtti -fstrict-aliasing -fno-math-errno -fno-stack-protector #TODO -fno-exceptions
 
 # #overall settings
 CXXFLAGS += -funit-at-a-time -fexpensive-optimizations -fvect-cost-model=dynamic

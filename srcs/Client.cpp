@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 15:48:16                                                 
-last edited: 2025-05-03 19:03:11                                                
+last edited: 2025-05-09 20:42:19                                                
 
 ================================================================================*/
 
@@ -41,27 +41,45 @@ COLD void Client::connect(void)
   auto const results = resolver.resolve(host, port);
 
   net::connect(ws_stream.next_layer().next_layer(), results.begin(), results.end());
+
+  auto &socket = beast::get_lowest_layer(ws_stream);
+  socket.set_option(net::ip::tcp::no_delay(true));
+  socket.set_option(net::socket_base::keep_alive(true));
+  socket.non_blocking(true);
+  socket.native_non_blocking(true);
+
+  //TODO remove
+  socket.set_option(net::socket_base::reuse_address(true));
+  socket.set_option(net::socket_base::keep_alive(true));
+
   ws_stream.next_layer().handshake(ssl::stream_base::client);
   ws_stream.handshake(host, path);
 }
 
-COLD void Client::listen(void)
+HOT void Client::listen(void)
 {
   beast::flat_buffer buffer;
+  buffer.reserve(8192);
 
-  while (ws_stream.is_open())
+  ws_stream.auto_fragment(false);
+  ws_stream.binary(true);
+  ws_stream.read_message_max(0);
+
+  while (true)
   {
     ws_stream.read(buffer);
 
-    if (buffer.size() == 0)
-      break;
-
-    const auto json = beast::buffers_to_string(buffer.data());
-
-    printf("%s\n", json.c_str());
+    std::string_view data{
+      reinterpret_cast<const char*>(buffer.data().data()),
+      buffer.data().size()
+    };
+    process_market_data(data);
 
     buffer.consume(buffer.size());
   }
+}
 
-  std::unreachable();
+HOT void Client::process_market_data(std::string_view data)
+{
+  printf("%s\n", data.data());
 }
