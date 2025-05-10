@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-23 17:58:46                                                 
-last edited: 2025-05-10 09:38:35                                                
+last edited: 2025-05-10 11:37:51                                                
 
 ================================================================================*/
 
@@ -21,6 +21,7 @@ last edited: 2025-05-10 09:38:35
 #include <boost/beast/ssl.hpp>
 
 #include "OrderBook.hpp"
+#include "FixedPoint.hpp"
 
 namespace net = boost::asio;
 namespace ssl = boost::asio::ssl;
@@ -28,6 +29,7 @@ namespace beast = boost::beast;
 namespace ip = boost::asio::ip;
 namespace websocket = beast::websocket;
 
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 class Client
 {
   public:
@@ -39,19 +41,20 @@ class Client
 
   private:
 
-    void connect(void);
-    void listen(void);
-
-    static void processMarketData(std::string_view data);
-    static void processOrder(yyjson_val *order);
-
-    static void handleTrade(const OrderBook::Side side, const int32_t price, const uint64_t qty);
-    static void handleChange(const OrderBook::Side side, const int32_t price, const uint64_t qty);
+    using PriceType = FixedPoint<PriceDecimals>;
+    using QtyType = FixedPoint<QtyDecimals>;
 
     net::io_context io_ctx;
     ssl::context ssl_ctx;
     websocket::stream<beast::ssl_stream<net::ip::tcp::socket>> ws_stream;
 
     std::string path;
-    OrderBook order_book;
+    OrderBook<PriceType, QtyType> order_book;
+
+    void connect(void);
+    void listen(void);
+
+    void processMarketData(std::string_view data);
+    void processOrder(yyjson_val *order);
+    void handleChange(const char side, const PriceType, const QtyType qty);
 };

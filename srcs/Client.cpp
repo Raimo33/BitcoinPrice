@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 15:48:16                                                 
-last edited: 2025-05-10 09:38:35                                                
+last edited: 2025-05-10 11:37:51                                                
 
 ================================================================================*/
 
@@ -32,6 +32,7 @@ void Client::run(void) noexcept
 {
   connect();
   listen();
+  //TODO log best price, asynchronous
 }
 
 COLD void Client::connect(void)
@@ -105,31 +106,36 @@ HOT void Client::processMarketData(std::string_view data)
 
 HOT void Client::processOrder(yyjson_val *order)
 {
-  const char *type_str = yyjson_get_str(yyjson_obj_get(order, "type"));
-  const char *side_str = yyjson_get_str(yyjson_obj_get(order, "side"));
-  const char *price_str = yyjson_get_str(yyjson_obj_get(order, "price"));
-  const char *qty_str = yyjson_get_str(yyjson_obj_get(order, "delta"));
+  yyjson_val *type_obj = yyjson_obj_get(order, "type");
+  yyjson_val *side_obj = yyjson_obj_get(order, "side");
+  yyjson_val *price_obj = yyjson_obj_get(order, "price");
+  yyjson_val *qty_obj = yyjson_obj_get(order, "remaining");
 
-  const OrderBook::Side side = static_cast<OrderBook::Side>(side_str[0] == 'a');
-  const int32_t price = 100; //TODO get actual price, float to int32_t
-  const uint64_t qty = 100; //TODO get actual qty
+  const char *type_str = yyjson_get_str(type_obj);
 
-  using Handler = void (*)(const OrderBook::Side, const int32_t, const uint64_t);
-  static constexpr std::array<Handler, 2> handlers = {
-    &Client::handleChange,
-    &Client::handleTrade
-  };
+  const bool is_change = (type_str[0] == 'c');
+  if (!is_change)
+    return;
 
-  const bool is_trade = (type_str[0] == 't');
-  handlers[is_trade](side, price, qty);
+  const char *side_str = yyjson_get_str(side_obj);
+  const char *price_str = yyjson_get_str(price_obj);
+  const char *qty_str = yyjson_get_str(qty_obj);
+
+  //TODO optimize conversion
+  const char side = side_str[0];
+  const PriceType price = yyjson_get_real(price_obj);
+  const QtyType qty = yyjson_get_real(qty_obj);
+
+  handleChange(side, price, qty);
 }
 
-HOT void Client::handleTrade(const OrderBook::Side side, const int32_t price, const uint64_t qty)
+HOT void Client::handleChange(const char side, const PriceType price, const QtyType qty)
 {
-  printf("received trade: %s %d %lu\n", side == OrderBook::BID ? "BID" : "ASK", price, qty);
-}
+  printf("Change %c %f %f\n", side, price, qty);
 
-HOT void Client::handleChange(const OrderBook::Side side, const int32_t price, const uint64_t qty)
-{
-  printf("received change: %s %d %lu\n", side == OrderBook::BID ? "BID" : "ASK", price, qty);
+  //TODO make branchless (hard to predict 50/50)
+  if (side == 'b')
+    order_book.setBidQty(price, qty);
+  else
+    order_book.setAskQty(price, qty);
 }

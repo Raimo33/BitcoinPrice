@@ -1,6 +1,6 @@
 /*================================================================================
 
-File: utils.cpp                                                                 
+File: FixedPoint.hpp                                                            
 Creator: Claudio Raimondi                                                       
 Email: claudio.raimondi@pm.me                                                   
 
@@ -9,23 +9,3 @@ last edited: 2025-05-10 11:37:51
 
 ================================================================================*/
 
-#include <iostream>
-#include <stdexcept>
-
-#include "utils.hpp"
-#include "macros.hpp"
-
-namespace utils
-{
-
-[[noreturn]] COLD NEVER_INLINE void throw_exception(const std::string_view msg)
-{
-#ifdef __EXCEPTIONS
-  throw std::runtime_error(std::string(msg));
-#else
-  std::cerr << msg << std::endl;
-  std::terminate();
-#endif
-}
-
-}
