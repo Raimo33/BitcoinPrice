@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-22 14:14:57                                                 
-last edited: 2025-05-09 22:25:43                                                
+last edited: 2025-05-10 09:38:35                                                
 
 ================================================================================*/
 
@@ -50,7 +50,7 @@ class OrderBook
     inline void addOrderAsk(const int32_t price, const uint64_t qty);
     template<typename Comparator>
     void addOrder(PriceLevels &levels, const int32_t price, const uint64_t qty);
-    void addPriceLevel(PriceLevels &levels, const size_t price_idx);
+    void addPriceLevel(PriceLevels &levels, const size_t price_idx, const int32_t price);
 
     inline void removeOrderBid(const int32_t price, const uint64_t qty);
     inline void removeOrderAsk(const int32_t price, const uint64_t qty);

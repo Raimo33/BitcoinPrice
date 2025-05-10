@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-23 17:58:46                                                 
-last edited: 2025-05-09 22:25:43                                                
+last edited: 2025-05-10 09:38:35                                                
 
 ================================================================================*/
 
@@ -39,13 +39,6 @@ class Client
 
   private:
 
-    net::io_context io_ctx;
-    ssl::context ssl_ctx;
-    websocket::stream<beast::ssl_stream<net::ip::tcp::socket>> ws_stream;
-    
-    std::string path;
-    OrderBook order_book;
-
     void connect(void);
     void listen(void);
 
@@ -54,4 +47,11 @@ class Client
 
     static void handleTrade(const OrderBook::Side side, const int32_t price, const uint64_t qty);
     static void handleChange(const OrderBook::Side side, const int32_t price, const uint64_t qty);
+
+    net::io_context io_ctx;
+    ssl::context ssl_ctx;
+    websocket::stream<beast::ssl_stream<net::ip::tcp::socket>> ws_stream;
+
+    std::string path;
+    OrderBook order_book;
 };

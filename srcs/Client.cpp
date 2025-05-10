@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 15:48:16                                                 
-last edited: 2025-05-09 22:25:43                                                
+last edited: 2025-05-10 09:38:35                                                
 
 ================================================================================*/
 
@@ -70,10 +70,8 @@ HOT void Client::listen(void)
   {
     ws_stream.read(buffer);
 
-    std::string_view data{
-      reinterpret_cast<const char*>(buffer.data().data()),
-      buffer.data().size()
-    };
+    auto seq = buffer.data();
+    std::string_view data{reinterpret_cast<const char*>(seq.data()), seq.size()};
     processMarketData(data);
 
     buffer.consume(buffer.size());
@@ -82,9 +80,7 @@ HOT void Client::listen(void)
 
 HOT void Client::processMarketData(std::string_view data)
 {
-  static bool error = false;
-
-  printf("%s\n", data.data());
+  bool error = false;
 
   yyjson_doc *doc = yyjson_read_opts(const_cast<char*>(data.data()), data.size(), YYJSON_READ_ALLOW_TRAILING_COMMAS, nullptr, nullptr);
   error |= (doc == nullptr);
@@ -92,18 +88,17 @@ HOT void Client::processMarketData(std::string_view data)
   yyjson_val *root = yyjson_doc_get_root(doc);
   error |= (root == nullptr);
 
+  yyjson_val *events = yyjson_obj_get(root, "events");
+  error |= (events == nullptr);
+  error |= (yyjson_is_arr(events) == false);
+
   if (error) [[unlikely]]
     utils::throw_exception("Failed to parse JSON data");
 
-  if (yyjson_is_arr(root)) [[likely]]
-  {
-    size_t idx, max;
-    yyjson_val *update;
-    yyjson_arr_foreach(root, idx, max, update)
-      processOrder(update);
-  }
-  else if (yyjson_is_obj(root))
-    processOrder(root);
+  size_t idx, max;
+  yyjson_val *order;
+  yyjson_arr_foreach(events, idx, max, order)
+    processOrder(order);
 
   yyjson_doc_free(doc);
 }
@@ -114,9 +109,6 @@ HOT void Client::processOrder(yyjson_val *order)
   const char *side_str = yyjson_get_str(yyjson_obj_get(order, "side"));
   const char *price_str = yyjson_get_str(yyjson_obj_get(order, "price"));
   const char *qty_str = yyjson_get_str(yyjson_obj_get(order, "delta"));
-
-  printf("side: %s, type: %s, price: %s, qty: %s\n", side_str, type_str, price_str, qty_str);
-  exit(1);
 
   const OrderBook::Side side = static_cast<OrderBook::Side>(side_str[0] == 'a');
   const int32_t price = 100; //TODO get actual price, float to int32_t

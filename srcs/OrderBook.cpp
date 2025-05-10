@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-07 21:17:51                                                 
-last edited: 2025-05-09 22:25:43                                                
+last edited: 2025-05-10 09:38:35                                                
 
 ================================================================================*/
 
@@ -79,19 +79,19 @@ HOT void OrderBook::addOrder(PriceLevels &levels, const int32_t price, const uin
   size_t price_idx = utils::backward_lower_bound(std::span<const int32_t>{prices}, price, cmp);
 
   if (prices[price_idx] != price) [[unlikely]]
-    addPriceLevel(levels, ++price_idx);
+    addPriceLevel(levels, ++price_idx, price);
 
   auto &cumulative_qty = levels.cumulative_qtys[price_idx];
   cumulative_qty += qty;
 }
 
-HOT void OrderBook::addPriceLevel(PriceLevels &levels, const size_t price_idx, price)
+HOT void OrderBook::addPriceLevel(PriceLevels &levels, const size_t price_idx, const int32_t price)
 {
   auto &prices = levels.prices;
   auto &cumulative_qtys = levels.cumulative_qtys;
 
   prices.insert(prices.cbegin() + price_idx, price);
-  cumulative_qtys.insert(cumulative_qtys.begin() + price_idx, 0)
+  cumulative_qtys.insert(cumulative_qtys.begin() + price_idx, 0);
 }
 
 template<typename Comparator>
