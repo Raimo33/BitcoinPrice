@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-23 17:58:46                                                 
-last edited: 2025-05-10 11:37:51                                                
+last edited: 2025-05-10 22:09:22                                                
 
 ================================================================================*/
 
@@ -58,3 +58,5 @@ class Client
     void processOrder(yyjson_val *order);
     void handleChange(const char side, const PriceType, const QtyType qty);
 };
+
+#include "Client.tpp"

@@ -5,18 +5,20 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 15:48:16                                                 
-last edited: 2025-05-10 11:37:51                                                
+last edited: 2025-05-10 22:09:22                                                
 
 ================================================================================*/
+
+#pragma once
 
 #include <yyjson.h>
 
 #include "Client.hpp"
-#include "utils/utils.hpp"
 #include "macros.hpp"
+#include "utils.hpp"
 
-COLD Client::Client(std::string_view pair) noexcept :
-  io_ctx(),
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+COLD Client<PriceDecimals, QtyDecimals>::Client(std::string_view pair) noexcept :
   ssl_ctx(ssl::context::tlsv12_client),
   ws_stream(io_ctx, ssl_ctx),
   path("/v1/marketdata/" + std::string(pair))
@@ -24,18 +26,21 @@ COLD Client::Client(std::string_view pair) noexcept :
   ssl_ctx.set_verify_mode(ssl::verify_none);
 }
 
-COLD Client::~Client() noexcept
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+COLD Client<PriceDecimals, QtyDecimals>::~Client(void) noexcept
 {
 }
 
-void Client::run(void) noexcept
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+void Client<PriceDecimals, QtyDecimals>::run(void) noexcept
 {
   connect();
   listen();
   //TODO log best price, asynchronous
 }
 
-COLD void Client::connect(void)
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+COLD void Client<PriceDecimals, QtyDecimals>::connect(void)
 {
   const std::string host = "api.gemini.com";
   const std::string port = "443";
@@ -58,7 +63,8 @@ COLD void Client::connect(void)
   ws_stream.handshake(host, path);
 }
 
-HOT void Client::listen(void)
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
 {
   beast::flat_buffer buffer;
   buffer.reserve(8192);
@@ -79,7 +85,8 @@ HOT void Client::listen(void)
   }
 }
 
-HOT void Client::processMarketData(std::string_view data)
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view data)
 {
   bool error = false;
 
@@ -104,7 +111,8 @@ HOT void Client::processMarketData(std::string_view data)
   yyjson_doc_free(doc);
 }
 
-HOT void Client::processOrder(yyjson_val *order)
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+HOT void Client<PriceDecimals, QtyDecimals>::processOrder(yyjson_val *order)
 {
   yyjson_val *type_obj = yyjson_obj_get(order, "type");
   yyjson_val *side_obj = yyjson_obj_get(order, "side");
@@ -123,15 +131,17 @@ HOT void Client::processOrder(yyjson_val *order)
 
   //TODO optimize conversion
   const char side = side_str[0];
-  const PriceType price = yyjson_get_real(price_obj);
-  const QtyType qty = yyjson_get_real(qty_obj);
+  const PriceType price(yyjson_get_real(price_obj));
+  const QtyType qty(yyjson_get_real(qty_obj));
 
   handleChange(side, price, qty);
 }
 
-HOT void Client::handleChange(const char side, const PriceType price, const QtyType qty)
+#include <iostream>
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+HOT void Client<PriceDecimals, QtyDecimals>::handleChange(const char side, const PriceType price, const QtyType qty)
 {
-  printf("Change %c %f %f\n", side, price, qty);
+  std::cout << "Side: " << side << ", Price: " << price << ", Qty: " << qty << std::endl;
 
   //TODO make branchless (hard to predict 50/50)
   if (side == 'b')

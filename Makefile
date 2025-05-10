@@ -3,7 +3,7 @@ TARGET := BitcoinPrice
 INCS_DIR := incs
 SRCS_DIR := srcs
 
-SRCS := $(addprefix $(SRCS_DIR)/, main.cpp Client.cpp OrderBook.cpp utils.cpp)
+SRCS := $(addprefix $(SRCS_DIR)/, main.cpp utils.cpp)
 OBJS := $(SRCS:.cpp=.o)
 DEPS := $(OBJS:.o=.d)
 
@@ -15,7 +15,7 @@ CXXFLAGS += -Wall -Wextra -pedantic
 #architecture
 CXXFLAGS += -march=native -mtune=native
 #promises
-CXXFLAGS += -fomit-frame-pointer -fno-rtti -fstrict-aliasing -fno-math-errno -fno-stack-protector #TODO -fno-exceptions
+CXXFLAGS += -fomit-frame-pointer -fno-rtti -fstrict-aliasing -fno-math-errno -fno-stack-protector -fno-exceptions
 
 # #overall settings
 CXXFLAGS += -funit-at-a-time -fexpensive-optimizations -fvect-cost-model=dynamic
@@ -49,7 +49,8 @@ CXXFLAGS += -fno-plt -fuse-linker-plugin -flto
 
 CXXFLAGS += -I$(INCS_DIR)
 
-LDFLAGS := #TODO -static -static-libgcc -static-libstdc++
+LDFLAGS := -static -static-libgcc -static-libstdc++
+LDFLAGS += -L/usr/lib/boost -L/usr/lib/yyjson -L/usr/lib/ssl -L/usr/lib/crypto
 LDLIBS := -ljemalloc -lboost_system -lboost_exception -lssl -lcrypto -lyyjson
 
 %.o: %.cpp
