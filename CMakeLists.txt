@@ -1,26 +1,28 @@
-TARGET := BitcoinPrice
+cmake_minimum_required(VERSION 3.20)
+project(BitcoinPrice LANGUAGES CXX)
 
-INCS_DIR := incs
-SRCS_DIR := srcs
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-SRCS := $(addprefix $(SRCS_DIR)/, main.cpp utils.cpp)
-OBJS := $(SRCS:.cpp=.o)
-DEPS := $(OBJS:.o=.d)
+set(SOURCES
+  srcs/main.cpp
+  srcs/utils.cpp
+)
+add_executable(BitcoinPrice ${SOURCES})
 
-CCXX := g++
+target_include_directories(BitcoinPrice PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/incs
+)
 
-CXXFLAGS += -std=c++23
-#warnings
-CXXFLAGS += -Wall -Wextra -pedantic
-#architecture
-CXXFLAGS += -march=native -mtune=native
-#promises
-CXXFLAGS += -fomit-frame-pointer -fno-rtti -fstrict-aliasing -fno-math-errno -fno-stack-protector -fno-exceptions
+target_compile_options(BitcoinPrice PRIVATE
+  -Wall -Wextra -Werror -pedantic
+  -fomit-frame-pointer -fno-rtti -fno-exceptions -fstrict-aliasing -fno-math-errno -fno-stack-protector
+  -march=native -funit-at-a-time -fexpensive-optimizations -fvect-cost-model=dynamic
+  -freciprocal-math -fsingle-precision-constant -ffp-contract=fast
+  -fno-plt -fuse-linker-plugin -flto
+)
 
-# #overall settings
-CXXFLAGS += -funit-at-a-time -fexpensive-optimizations -fvect-cost-model=dynamic
-# #math
-CXXFLAGS += -freciprocal-math -fsingle-precision-constant -ffp-contract=fast
 # #cleanup
 # CXXFLAGS += -ftree-pta -ftree-copy-prop -ftree-forwprop -ftree-phiprop -ftree-scev-cprop
 # CXXFLAGS += -ftree-dce -ftree-builtin-call-dce -ftree-ccp -ftree-bit-ccp -ftree-dominator-opts -ftree-ch -ftree-coalesce-vars -ftree-sink -ftree-slsr -ftree-sra -ftree-pre -ftree-partial-pre -ftree-dse -ftree-vrp
@@ -44,32 +46,18 @@ CXXFLAGS += -freciprocal-math -fsingle-precision-constant -ffp-contract=fast
 # CXXFLAGS += -freorder-blocks -freorder-blocks-algorithm=stc -freorder-blocks-and-partition -freorder-functions -fcode-hoisting -fhoist-adjacent-loads -fira-hoist-pressure
 # CXXFLAGS += -falign-functions -falign-jumps -falign-labels -falign-loops
 # CXXFLAGS += -fcaller-saves -fdefer-pop -fguess-branch-probability
-#linker
-CXXFLAGS += -fno-plt -fuse-linker-plugin -flto
 
-CXXFLAGS += -I$(INCS_DIR)
+target_link_options(BitcoinPrice PRIVATE
+  -static
+)
 
-LDFLAGS := -static -static-libgcc -static-libstdc++
-LDFLAGS += -L/usr/lib/boost -L/usr/lib/yyjson -L/usr/lib/ssl -L/usr/lib/crypto
-LDLIBS := -ljemalloc -lboost_system -lboost_exception -lssl -lcrypto -lyyjson
+set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
-
-$(TARGET): $(OBJS)
-	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS) $(LDLIBS)
-
-clean:
-	rm -f $(OBJS) $(DEPS)
-
-fclean: clean
-	rm -f $(TARGET)
-
-re: fclean $(TARGET)
-
--include $(DEPS)
-
-.PHONY: fclean clean re
-.IGNORE: fclean clean
-.PRECIOUS: .o .d
-.SILENT:
+target_link_libraries(BitcoinPrice
+  boost_system
+  yyjson
+  ssl
+  crypto
+  jemalloc
+)

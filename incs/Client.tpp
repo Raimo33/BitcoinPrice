@@ -126,8 +126,6 @@ HOT void Client<PriceDecimals, QtyDecimals>::processOrder(yyjson_val *order)
     return;
 
   const char *side_str = yyjson_get_str(side_obj);
-  const char *price_str = yyjson_get_str(price_obj);
-  const char *qty_str = yyjson_get_str(qty_obj);
 
   //TODO optimize conversion
   const char side = side_str[0];

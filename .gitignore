@@ -2,3 +2,7 @@ BitcoinPrice
 .vscode/
 *.d
 *.o
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+build/
