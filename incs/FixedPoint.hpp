@@ -24,6 +24,8 @@ struct FixedPoint
   FixedPoint();
   FixedPoint(const int64_t integer);
   explicit FixedPoint(const double real);
+  explicit FixedPoint(const int64_t int_part, const int64_t frac_part);
+  explicit FixedPoint(std::string_view str);
   FixedPoint(const FixedPoint &other);
   FixedPoint(FixedPoint &&other) noexcept;
 

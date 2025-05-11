@@ -55,6 +55,8 @@ class Client
     void listen(void);
 
     void processMarketData(std::string_view data);
+    void logBestPrice(void) const;
+
     void handleEvent(yyjson_val *event);
 
     void handleChange(yyjson_val *event);

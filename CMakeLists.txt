@@ -53,6 +53,8 @@ target_link_options(BitcoinPrice PRIVATE
 
 target_link_libraries(BitcoinPrice
   ssl
+  dl
+  resolv
   crypto
   boost_system
   yyjson

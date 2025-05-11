@@ -26,6 +26,24 @@ FixedPoint<Decimals>::FixedPoint(const double real)
  : value(static_cast<int64_t>(real * scale)) {}
 
 template <uint8_t Decimals>
+FixedPoint<Decimals>::FixedPoint(const int64_t int_part, const int64_t frac_part)
+ : value(int_part * scale + frac_part) {}
+
+template <uint8_t Decimals>
+FixedPoint<Decimals>::FixedPoint(std::string_view str)
+ : value(0)
+{
+  const char *str_ptr = str.data();
+  int64_t int_part = std::strtoll(str_ptr, const_cast<char **>(&str_ptr), 10);
+  
+  int64_t frac_part = 0;
+  if (str_ptr[0] == '.')
+    frac_part = std::strtoll(str_ptr + 1, nullptr, 10);
+
+  value = int_part * scale + frac_part;
+}
+
+template <uint8_t Decimals>
 FixedPoint<Decimals>::FixedPoint(const FixedPoint &other)
  : value(other.value) {}
 

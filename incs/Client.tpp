@@ -12,6 +12,7 @@ last edited: 2025-05-11 21:29:03
 #pragma once
 
 #include <yyjson.h>
+#include <iostream>
 
 #include "Client.hpp"
 #include "macros.hpp"
@@ -35,8 +36,8 @@ template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 void Client<PriceDecimals, QtyDecimals>::run(void) noexcept
 {
   connect();
+  //TODO fork: parent writes orderbook, child prints orderbook (SPSC queue)
   listen();
-  //TODO log best price, asynchronous
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
@@ -67,7 +68,7 @@ template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
 {
   beast::flat_buffer buffer;
-  buffer.reserve(8192);
+  buffer.prepare(16 * 1024);
 
   ws_stream.auto_fragment(false);
   ws_stream.binary(true);
@@ -78,13 +79,14 @@ HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
     const std::size_t read_bytes = ws_stream.read(buffer);
 
     //TODO better way
-    std::string_view data{reinterpret_cast<const char*>(buffer.data().data()), read_bytes};
+    std::string_view data{static_cast<const char*>(buffer.data().data()), read_bytes};
     processMarketData(data);
 
     buffer.consume(read_bytes);
   }
 }
 
+//TODO: YYJSON improvement proposal: parse only needed JSON fields, pre-set at compile time
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view data)
 {
@@ -116,7 +118,10 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *event)
     return handlers;
   }();
 
-  const char type = yyjson_get_str(event)[0];
+  yyjson_val *type_obj = yyjson_obj_get(event, "type");
+  const char *type_str = yyjson_get_str(type_obj);
+
+  const char type = type_str[0];
   (this->*handlers[type])(event);
 }
 
@@ -128,11 +133,12 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *event)
   yyjson_val *qty_obj = yyjson_obj_get(event, "remaining");
 
   const char *side_str = yyjson_get_str(side_obj);
+  const char *price_str = yyjson_get_str(price_obj);
+  const char *qty_str = yyjson_get_str(qty_obj);
 
-  //TODO optimize conversion
   const char side = side_str[0];
-  const PriceType price(yyjson_get_real(price_obj));
-  const QtyType qty(yyjson_get_real(qty_obj));
+  const PriceType price(price_str);
+  const QtyType qty(qty_str);
 
   //TODO make branchless (hard to predict 50/50)
   if (side == 'b')
@@ -144,4 +150,12 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *event)
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 HOT void Client<PriceDecimals, QtyDecimals>::handleTrade(UNUSED yyjson_val *event)
 {
+}
+
+//TODO faster
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+void Client<PriceDecimals, QtyDecimals>::logBestPrice(void) const
+{
+  std::cout << order_book.getBestBidPrice() << " " << order_book.getBestBidQty() << " - "
+            << order_book.getBestAskPrice() << " " << order_book.getBestAskQty() << std::endl;
 }
