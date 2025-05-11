@@ -51,13 +51,10 @@ target_link_options(BitcoinPrice PRIVATE
   -static
 )
 
-set(BUILD_SHARED_LIBS OFF)
-set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-
 target_link_libraries(BitcoinPrice
-  boost_system
-  yyjson
   ssl
   crypto
+  boost_system
+  yyjson
   jemalloc
 )
