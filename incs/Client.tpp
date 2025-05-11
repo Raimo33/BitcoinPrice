@@ -88,19 +88,11 @@ HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view data)
 {
-  bool error = false;
-
   yyjson_doc *doc = yyjson_read_opts(const_cast<char*>(data.data()), data.size(), 0, nullptr, nullptr);
-  error |= (doc == nullptr);
-
   yyjson_val *root = yyjson_doc_get_root(doc);
-  error |= (root == nullptr);
-
   yyjson_val *events = yyjson_obj_get(root, "events");
-  error |= (events == nullptr);
-  error |= (yyjson_is_arr(events) == false);
 
-  if (error) [[unlikely]]
+  if (!yyjson_is_arr(events)) [[unlikely]]
     utils::throw_exception("Failed to parse JSON data");
 
   size_t idx, max;
