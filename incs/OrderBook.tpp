@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-07 21:17:51                                                 
-last edited: 2025-05-10 22:09:22                                                
+last edited: 2025-05-11 21:29:03                                                
 
 ================================================================================*/
 
@@ -37,7 +37,6 @@ COLD OrderBook<PriceType, QtyType>::~OrderBook()
 {
 }
 
-//TODO possible to make branchless by inhibition
 template<typename PriceType, typename QtyType>
 template<typename Comparator>
 HOT void OrderBook<PriceType, QtyType>::setQty(PriceLevels &levels, const PriceType price, const QtyType qty)
@@ -45,7 +44,6 @@ HOT void OrderBook<PriceType, QtyType>::setQty(PriceLevels &levels, const PriceT
   auto &prices = levels.prices;
   auto &cumulative_qtys = levels.cumulative_qtys;
 
-  //TODO backwards linear search would be faster (updates likely to be at the end). (if you hire me, i will implement a SIMD one :D )
   static constexpr Comparator cmp;
   const auto price_it = std::lower_bound(prices.begin(), prices.end(), price, cmp);
   const auto qty_it = cumulative_qtys.begin() + std::distance(prices.begin(), price_it);

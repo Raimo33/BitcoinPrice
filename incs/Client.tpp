@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 15:48:16                                                 
-last edited: 2025-05-10 22:09:22                                                
+last edited: 2025-05-11 21:29:03                                                
 
 ================================================================================*/
 
@@ -75,13 +75,13 @@ HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
 
   while (true)
   {
-    ws_stream.read(buffer);
+    const std::size_t read_bytes = ws_stream.read(buffer);
 
-    auto seq = buffer.data();
-    std::string_view data{reinterpret_cast<const char*>(seq.data()), seq.size()};
+    //TODO better way
+    std::string_view data{reinterpret_cast<const char*>(buffer.data().data()), read_bytes};
     processMarketData(data);
 
-    buffer.consume(buffer.size());
+    buffer.consume(read_bytes);
   }
 }
 
@@ -90,7 +90,7 @@ HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view 
 {
   bool error = false;
 
-  yyjson_doc *doc = yyjson_read_opts(const_cast<char*>(data.data()), data.size(), YYJSON_READ_ALLOW_TRAILING_COMMAS, nullptr, nullptr);
+  yyjson_doc *doc = yyjson_read_opts(const_cast<char*>(data.data()), data.size(), 0, nullptr, nullptr);
   error |= (doc == nullptr);
 
   yyjson_val *root = yyjson_doc_get_root(doc);
@@ -104,26 +104,36 @@ HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view 
     utils::throw_exception("Failed to parse JSON data");
 
   size_t idx, max;
-  yyjson_val *order;
-  yyjson_arr_foreach(events, idx, max, order)
-    processOrder(order);
+  yyjson_val *event;
+  yyjson_arr_foreach(events, idx, max, event)
+    handleEvent(event);
 
   yyjson_doc_free(doc);
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::processOrder(yyjson_val *order)
+HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *event)
 {
-  yyjson_val *type_obj = yyjson_obj_get(order, "type");
-  yyjson_val *side_obj = yyjson_obj_get(order, "side");
-  yyjson_val *price_obj = yyjson_obj_get(order, "price");
-  yyjson_val *qty_obj = yyjson_obj_get(order, "remaining");
+  using Handler = void (Client<PriceDecimals, QtyDecimals>::*)(yyjson_val *);
 
-  const char *type_str = yyjson_get_str(type_obj);
+  static constexpr uint8_t size = 't' + 1;
+  static constexpr std::array<Handler, size> handlers = [](){
+    std::array<Handler, size> handlers{};
+    handlers['c'] = &Client<PriceDecimals, QtyDecimals>::handleChange;
+    handlers['t'] = &Client<PriceDecimals, QtyDecimals>::handleTrade;
+    return handlers;
+  }();
 
-  const bool is_change = (type_str[0] == 'c');
-  if (!is_change)
-    return;
+  const char type = yyjson_get_str(event)[0];
+  (this->*handlers[type])(event);
+}
+
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *event)
+{
+  yyjson_val *side_obj = yyjson_obj_get(event, "side");
+  yyjson_val *price_obj = yyjson_obj_get(event, "price");
+  yyjson_val *qty_obj = yyjson_obj_get(event, "remaining");
 
   const char *side_str = yyjson_get_str(side_obj);
 
@@ -132,18 +142,14 @@ HOT void Client<PriceDecimals, QtyDecimals>::processOrder(yyjson_val *order)
   const PriceType price(yyjson_get_real(price_obj));
   const QtyType qty(yyjson_get_real(qty_obj));
 
-  handleChange(side, price, qty);
-}
-
-#include <iostream>
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::handleChange(const char side, const PriceType price, const QtyType qty)
-{
-  std::cout << "Side: " << side << ", Price: " << price << ", Qty: " << qty << std::endl;
-
   //TODO make branchless (hard to predict 50/50)
   if (side == 'b')
     order_book.setBidQty(price, qty);
   else
     order_book.setAskQty(price, qty);
+}
+
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+HOT void Client<PriceDecimals, QtyDecimals>::handleTrade(UNUSED yyjson_val *event)
+{
 }

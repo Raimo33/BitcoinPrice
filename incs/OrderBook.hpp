@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-22 14:14:57                                                 
-last edited: 2025-05-10 11:37:51                                                
+last edited: 2025-05-11 21:29:03                                                
 
 ================================================================================*/
 
@@ -37,7 +37,6 @@ class OrderBook
 
     struct PriceLevels
     {
-      //sorted with best price last. prices[i] and cumulative_qtys[i] are the same price level
       std::vector<PriceType> prices;
       std::vector<QtyType> cumulative_qtys;
     };

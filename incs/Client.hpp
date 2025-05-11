@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-23 17:58:46                                                 
-last edited: 2025-05-10 22:09:22                                                
+last edited: 2025-05-11 21:29:03                                                
 
 ================================================================================*/
 
@@ -55,8 +55,10 @@ class Client
     void listen(void);
 
     void processMarketData(std::string_view data);
-    void processOrder(yyjson_val *order);
-    void handleChange(const char side, const PriceType, const QtyType qty);
+    void handleEvent(yyjson_val *event);
+
+    void handleChange(yyjson_val *event);
+    void handleTrade(yyjson_val *event);
 };
 
 #include "Client.tpp"
