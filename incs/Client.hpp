@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-23 17:58:46                                                 
-last edited: 2025-05-12 10:11:38                                                
+last edited: 2025-05-12 18:12:19                                                
 
 ================================================================================*/
 
@@ -19,7 +19,7 @@ last edited: 2025-05-12 10:11:38
 #include <boost/beast.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/ssl.hpp>
-#include <ipqueue/SPSCQueue.hpp>
+#include <ipq/SPSCQueue.hpp>
 
 #include "OrderBook.hpp"
 #include "FixedPoint.hpp"
@@ -48,7 +48,7 @@ class Client
     net::io_context io_ctx;
     ssl::context ssl_ctx;
     websocket::stream<beast::ssl_stream<net::ip::tcp::socket>> ws_stream;
-    ipqueue::SPSCQueue queue;
+    ipq::SPSCQueue queue;
 
     std::string path;
     OrderBook<PriceType, QtyType> order_book;

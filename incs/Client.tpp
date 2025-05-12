@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 15:48:16                                                 
-last edited: 2025-05-12 10:11:38                                                
+last edited: 2025-05-12 18:12:19                                                
 
 ================================================================================*/
 
@@ -91,7 +91,7 @@ HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view 
 {
   yyjson_doc *doc = yyjson_read_opts(const_cast<char*>(data.data()), data.size(), 0, nullptr, nullptr);
   yyjson_val *root = yyjson_doc_get_root(doc);
-  yyjson_val *events = yyjson_obj_get(root, "events");
+  yyjson_val *events = yyjson_obj_iter_get(root, "events");
 
   if (!yyjson_is_arr(events)) [[unlikely]]
     utils::throw_exception("Failed to parse JSON data");
@@ -117,7 +117,7 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *event)
     return handlers;
   }();
 
-  yyjson_val *type_obj = yyjson_obj_get(event, "type");
+  yyjson_val *type_obj = yyjson_obj_iter_get(event, "type");
   const char *type_str = yyjson_get_str(type_obj);
 
   const char type = type_str[0];
@@ -127,9 +127,9 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *event)
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *event)
 {
-  yyjson_val *side_obj = yyjson_obj_get(event, "side");
-  yyjson_val *price_obj = yyjson_obj_get(event, "price");
-  yyjson_val *qty_obj = yyjson_obj_get(event, "remaining");
+  yyjson_val *side_obj = yyjson_obj_iter_get(event, "side");
+  yyjson_val *price_obj = yyjson_obj_iter_get(event, "price");
+  yyjson_val *qty_obj = yyjson_obj_iter_get(event, "remaining");
 
   const char *side_str = yyjson_get_str(side_obj);
   const char *price_str = yyjson_get_str(price_obj);
