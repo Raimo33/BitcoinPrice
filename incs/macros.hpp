@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 18:21:38                                                 
-last edited: 2025-04-06 22:29:03                                                
+last edited: 2025-05-12 10:11:38                                                
 
 ================================================================================*/
 
@@ -20,3 +20,4 @@ last edited: 2025-04-06 22:29:03
 #define PREFETCH_R(x, priority)   __builtin_prefetch(x, 0, priority)
 #define PREFETCH_W(x, priority)   __builtin_prefetch(x, 1, priority)
 #define restrict                  __restrict__
+#define CACHELINE_SIZE            std::hardware_destructive_interference_size

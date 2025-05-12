@@ -5,14 +5,13 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 15:48:16                                                 
-last edited: 2025-05-11 21:29:03                                                
+last edited: 2025-05-12 10:11:38                                                
 
 ================================================================================*/
 
 #pragma once
 
 #include <yyjson.h>
-#include <iostream>
 
 #include "Client.hpp"
 #include "macros.hpp"
@@ -22,6 +21,7 @@ template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 COLD Client<PriceDecimals, QtyDecimals>::Client(std::string_view pair) noexcept :
   ssl_ctx(ssl::context::tlsv12_client),
   ws_stream(io_ctx, ssl_ctx),
+  queue("top_of_book"),
   path("/v1/marketdata/" + std::string(pair))
 {
   ssl_ctx.set_verify_mode(ssl::verify_none);
@@ -36,7 +36,6 @@ template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 void Client<PriceDecimals, QtyDecimals>::run(void) noexcept
 {
   connect();
-  //TODO fork: parent writes orderbook, child prints orderbook (SPSC queue)
   listen();
 }
 
@@ -145,6 +144,8 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *event)
     order_book.setBidQty(price, qty);
   else
     order_book.setAskQty(price, qty);
+
+  broadcastTopOfBook();
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
@@ -152,10 +153,14 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleTrade(UNUSED yyjson_val *even
 {
 }
 
-//TODO faster
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-void Client<PriceDecimals, QtyDecimals>::logBestPrice(void) const
+HOT void Client<PriceDecimals, QtyDecimals>::broadcastTopOfBook(void) const
 {
-  std::cout << order_book.getBestBidPrice() << " " << order_book.getBestBidQty() << " - "
-            << order_book.getBestAskPrice() << " " << order_book.getBestAskQty() << std::endl;
+  const TopOfBook msg{
+    order_book.getBestBidPrice(),
+    order_book.getBestAskPrice(),
+    order_book.getBestBidQty(),
+    order_book.getBestAskQty()
+  };
+
+  queue.try_push(msg);
 }

@@ -59,4 +59,5 @@ target_link_libraries(BitcoinPrice
   boost_system
   yyjson
   jemalloc
+  ipqueue
 )

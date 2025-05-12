@@ -5,13 +5,13 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 18:21:38                                                 
-last edited: 2025-05-10 11:37:51                                                
+last edited: 2025-05-12 10:11:38                                                
 
 ================================================================================*/
 
 #include <csignal>
 
-#include "Client.hpp"
+#include "Logger.hpp"
 #include "utils.hpp"
 
 void init_signal_handler(void);
@@ -20,8 +20,7 @@ int main(void)
 {
   init_signal_handler();
 
-  Client<2, 8> client("BTCUSD");
-  client.run();
+  //TODO logger
 }
 
 COLD void init_signal_handler(void)
