@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-05-13 14:30:09                                                 
-last edited: 2025-05-13 14:30:09                                                
+last edited: 2025-05-13 16:40:17                                                
 
 ================================================================================*/
 
@@ -42,7 +42,10 @@ class Logger
     std::string pair;
     ipq::SPSCQueue<TopOfBook, 64> queue;
 
-    void log(const TopOfBook& top_of_book);
+    void try_log(const TopOfBook& top_of_book);
+
+    template <uint8_t Decimals>
+    static void try_format(const bool changed, char* buffer, const FixedPoint<Decimals>& fixed_point) noexcept;
 };
 
 #include "Logger.tpp"

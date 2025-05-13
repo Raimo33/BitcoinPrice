@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-05-13 14:30:09                                                 
-last edited: 2025-05-13 14:30:09                                                
+last edited: 2025-05-13 16:40:17                                                
 
 ================================================================================*/
 
@@ -26,38 +26,64 @@ Logger<PriceDecimals, QtyDecimals>::~Logger(void) noexcept
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 void Logger<PriceDecimals, QtyDecimals>::start(void)
 {
-  TopOfBook cached_top_of_book{};
-
   while (true)
   {
     if (queue.isEmpty())
       continue;
 
     TopOfBook top_of_book = queue.pop();
-    if (top_of_book == cached_top_of_book) [[unlikely]]
-      continue;
-
-    cached_top_of_book = std::move(top_of_book);
-    log(top_of_book);
+    try_log(top_of_book);
   }
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-void Logger<PriceDecimals, QtyDecimals>::log(const TopOfBook& top_of_book)
+void Logger<PriceDecimals, QtyDecimals>::try_log(const TopOfBook& top_of_book)
 {
-  std::cout << top_of_book.best_bid_price << " " << top_of_book.best_bid_qty << " - "
-            << top_of_book.best_ask_price << " " << top_of_book.best_ask_qty << std::endl;
+  static thread_local PriceType cached_bid_price;
+  static thread_local PriceType cached_ask_price;
+  static thread_local QtyType cached_bid_qty;
+  static thread_local QtyType cached_ask_qty;
+
+  static_assert(sizeof(FixedPoint<PriceDecimals>::value) == sizeof(int32_t), "FixedPoint::value must be 4 bytes");
+
+  static thread_local char str[] = "0000000000 0000000000 - 0000000000 0000000000\n";
+
+  static thread_local char *str_bid_price = str + 0;
+  static thread_local char *str_bid_qty = str + 11;
+  static thread_local char *str_ask_price = str + 24;
+  static thread_local char *str_ask_qty = str + 35;
+
+  const bool bid_price_changed = top_of_book.best_bid_price != cached_bid_price;
+  const bool ask_price_changed = top_of_book.best_ask_price != cached_ask_price;
+  const bool bid_qty_changed = top_of_book.best_bid_qty != cached_bid_qty;
+  const bool ask_qty_changed = top_of_book.best_ask_qty != cached_ask_qty;
+
+  const bool anything_changed = bid_price_changed | ask_price_changed | bid_qty_changed | ask_qty_changed;
+  if (!anything_changed) [[unlikely]]
+    return;
+
+  try_format(bid_price_changed, str_bid_price, top_of_book.best_bid_price);
+  try_format(ask_price_changed, str_ask_price, top_of_book.best_ask_price);
+  try_format(bid_qty_changed, str_bid_qty, top_of_book.best_bid_qty);
+  try_format(ask_qty_changed, str_ask_qty, top_of_book.best_ask_qty);
+
+  write(STDOUT_FILENO, str, sizeof(str));
+
+  cached_ask_price = top_of_book.best_ask_price;
+  cached_bid_price = top_of_book.best_bid_price;
+  cached_ask_qty = top_of_book.best_ask_qty;
+  cached_bid_qty = top_of_book.best_bid_qty;
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-bool Logger<PriceDecimals, QtyDecimals>::TopOfBook::operator==(const TopOfBook& other) const noexcept
+template <uint8_t Decimals>
+void Logger<PriceDecimals, QtyDecimals>::try_format(const bool changed, char* buffer, const FixedPoint<Decimals>& fixed_point) noexcept
 {
-  bool equal = true;
+  using Handler = void (*)(char*, const FixedPoint<Decimals>);
 
-  equal &= best_bid_price == other.best_bid_price;
-  equal &= best_ask_price == other.best_ask_price;
-  equal &= best_bid_qty == other.best_bid_qty;
-  equal &= best_ask_qty == other.best_ask_qty;
+  static constexpr Handler no_op = [](char*, const FixedPoint<Decimals>) {};
+  static constexpr Handler format = FixedPoint<Decimals>::format;
 
-  return equal;
+  static constexpr std::array<Handler, 2> handlers = {no_op, format};
+  handlers[changed](buffer, fixed_point);
 }
