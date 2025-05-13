@@ -5,13 +5,14 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-05-10 11:37:51                                                 
-last edited: 2025-05-10 11:37:51                                                
+last edited: 2025-05-13 14:30:09                                                
 
 ================================================================================*/
 
 #include <iostream>
 #include <stdexcept>
 #include <boost/exception/all.hpp>
+#include <csignal>
 
 #include "utils.hpp"
 #include "macros.hpp"
@@ -27,6 +28,23 @@ namespace utils
   std::cerr << msg << std::endl;
   std::terminate();
 #endif
+}
+
+COLD void setup_signal_handler(void)
+{
+  struct sigaction sa{};
+
+  sa.sa_handler = [](int) { std::terminate(); };
+
+  bool error = false;
+
+  error |= sigaction(SIGINT, &sa, nullptr) == -1;
+  error |= sigaction(SIGTERM, &sa, nullptr) == -1;
+  error |= sigaction(SIGQUIT, &sa, nullptr) == -1;
+  error |= sigaction(SIGPIPE, &sa, nullptr) == -1;
+
+  if (error)
+    throw_exception("Failed to set signal handler");
 }
 
 }

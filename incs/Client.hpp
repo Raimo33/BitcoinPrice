@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-23 17:58:46                                                 
-last edited: 2025-05-12 18:12:19                                                
+last edited: 2025-05-13 14:30:09                                                
 
 ================================================================================*/
 
@@ -38,20 +38,12 @@ class Client
     Client(std::string_view pair) noexcept;
     ~Client() noexcept;
 
-    void run(void) noexcept;
+    void run(void);
 
   private:
 
     using PriceType = FixedPoint<PriceDecimals>;
     using QtyType = FixedPoint<QtyDecimals>;
-
-    net::io_context io_ctx;
-    ssl::context ssl_ctx;
-    websocket::stream<beast::ssl_stream<net::ip::tcp::socket>> ws_stream;
-    ipq::SPSCQueue queue;
-
-    std::string path;
-    OrderBook<PriceType, QtyType> order_book;
 
     struct alignas(CACHELINE_SIZE) TopOfBook
     {
@@ -60,6 +52,13 @@ class Client
       QtyType best_bid_qty;
       QtyType best_ask_qty;
     };
+
+    net::io_context io_ctx;
+    ssl::context ssl_ctx;
+    websocket::stream<beast::ssl_stream<net::ip::tcp::socket>> ws_stream;
+    std::string pair;
+    ipq::SPSCQueue<TopOfBook, 64> queue;
+    OrderBook<PriceType, QtyType> order_book;
 
     void connect(void);
     void listen(void);
@@ -70,7 +69,7 @@ class Client
     void handleChange(yyjson_val *event);
     void handleTrade(yyjson_val *event);
 
-    void broadcastTopOfBook(void) const;
+    void broadcastTopOfBook(void);
 };
 
 #include "Client.tpp"

@@ -64,7 +64,6 @@ set(LIBRARIES
   boost_system
   yyjson
   jemalloc
-  ipq
 )
 
 target_link_libraries(Producer PRIVATE ${LIBRARIES})

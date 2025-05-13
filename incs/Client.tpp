@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-03-08 15:48:16                                                 
-last edited: 2025-05-12 18:12:19                                                
+last edited: 2025-05-13 14:30:09                                                
 
 ================================================================================*/
 
@@ -21,8 +21,8 @@ template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 COLD Client<PriceDecimals, QtyDecimals>::Client(std::string_view pair) noexcept :
   ssl_ctx(ssl::context::tlsv12_client),
   ws_stream(io_ctx, ssl_ctx),
-  queue("top_of_book"),
-  path("/v1/marketdata/" + std::string(pair))
+  pair(pair),
+  queue(this->pair + "_top_of_book")
 {
   ssl_ctx.set_verify_mode(ssl::verify_none);
 }
@@ -33,7 +33,7 @@ COLD Client<PriceDecimals, QtyDecimals>::~Client(void) noexcept
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-void Client<PriceDecimals, QtyDecimals>::run(void) noexcept
+void Client<PriceDecimals, QtyDecimals>::run(void)
 {
   connect();
   listen();
@@ -44,6 +44,7 @@ COLD void Client<PriceDecimals, QtyDecimals>::connect(void)
 {
   const std::string host = "api.gemini.com";
   const std::string port = "443";
+  const std::string path = "/v1/marketdata/" + pair;
 
   ip::tcp::resolver resolver(io_ctx);
   auto const results = resolver.resolve(host, port);
@@ -91,7 +92,8 @@ HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view 
 {
   yyjson_doc *doc = yyjson_read_opts(const_cast<char*>(data.data()), data.size(), 0, nullptr, nullptr);
   yyjson_val *root = yyjson_doc_get_root(doc);
-  yyjson_val *events = yyjson_obj_iter_get(root, "events");
+  yyjson_obj_iter iter = yyjson_obj_iter_with(root);
+  yyjson_val *events = yyjson_obj_iter_get(&iter, "events");
 
   if (!yyjson_is_arr(events)) [[unlikely]]
     utils::throw_exception("Failed to parse JSON data");
@@ -117,7 +119,8 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *event)
     return handlers;
   }();
 
-  yyjson_val *type_obj = yyjson_obj_iter_get(event, "type");
+  yyjson_obj_iter iter = yyjson_obj_iter_with(event);
+  yyjson_val *type_obj = yyjson_obj_iter_get(&iter, "type");
   const char *type_str = yyjson_get_str(type_obj);
 
   const char type = type_str[0];
@@ -127,9 +130,11 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *event)
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *event)
 {
-  yyjson_val *side_obj = yyjson_obj_iter_get(event, "side");
-  yyjson_val *price_obj = yyjson_obj_iter_get(event, "price");
-  yyjson_val *qty_obj = yyjson_obj_iter_get(event, "remaining");
+  yyjson_obj_iter iter = yyjson_obj_iter_with(event);
+
+  yyjson_val *side_obj = yyjson_obj_iter_get(&iter, "side");
+  yyjson_val *price_obj = yyjson_obj_iter_get(&iter, "price");
+  yyjson_val *qty_obj = yyjson_obj_iter_get(&iter, "remaining");
 
   const char *side_str = yyjson_get_str(side_obj);
   const char *price_str = yyjson_get_str(price_obj);
@@ -153,14 +158,15 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleTrade(UNUSED yyjson_val *even
 {
 }
 
-HOT void Client<PriceDecimals, QtyDecimals>::broadcastTopOfBook(void) const
+template <uint8_t PriceDecimals, uint8_t QtyDecimals>
+HOT void Client<PriceDecimals, QtyDecimals>::broadcastTopOfBook(void)
 {
-  const TopOfBook msg{
+  TopOfBook msg{
     order_book.getBestBidPrice(),
     order_book.getBestAskPrice(),
     order_book.getBestBidQty(),
     order_book.getBestAskQty()
   };
 
-  queue.try_push(msg);
+  queue.push(msg);
 }
