@@ -5,7 +5,7 @@ Creator: Claudio Raimondi
 Email: claudio.raimondi@pm.me                                                   
 
 created at: 2025-05-10 22:09:22                                                 
-last edited: 2025-05-13 16:40:17                                                
+last edited: 2025-05-13 16:55:56                                                
 
 ================================================================================*/
 
@@ -170,10 +170,12 @@ FixedPoint<Decimals> &FixedPoint<Decimals>::operator=(FixedPoint &&other) noexce
 }
 
 
+//TODO can be optimized further (lookup tables, simd, division and modulus in a single step, etc.)
+//TODO fix subtle bug when printing zero
 template <uint8_t Decimals>
 void FixedPoint<Decimals>::format(char *buffer, FixedPoint<Decimals> fixed_point)
 {
-  const bool is_negative = fixed_point < FixedPoint<Decimals>{0};
+  const bool is_negative = fixed_point < 0;
 
   if (is_negative)
   {
@@ -193,9 +195,12 @@ void FixedPoint<Decimals>::format(char *buffer, FixedPoint<Decimals> fixed_point
   std::reverse(buffer, ptr);
 
   *ptr++ = '.';
-  for (int i = 0; i < Decimals; ++i)
+
+  for (uint8_t i = 0; i < Decimals; ++i)
   {
-    *ptr++ = '0' + (fractional_part % 10);
-    fractional_part /= 10;
+    fractional_part *= 10;
+    *ptr++ = '0' + (fractional_part / scale);
+    fractional_part %= scale;
   }
+
 }
