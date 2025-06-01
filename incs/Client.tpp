@@ -80,14 +80,14 @@ HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
   {
     const std::size_t read_bytes = _ws_stream.read(buffer);
 
-    //TODO better way
+    //TODO find a more readable way
     std::string_view data{static_cast<const char*>(buffer.data().data()), read_bytes};
     processMarketData(data);
 
     buffer.consume(read_bytes);
   }
 
-  std::unreachable();
+  // TODO std::unreachable(); in c++23
 }
 
 //TODO: YYJSON improvement proposal: parse only needed JSON fields, pre-set at compile time
@@ -111,7 +111,7 @@ HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view 
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *event)
+HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *restrict event)
 {
   using Handler = void (Client<PriceDecimals, QtyDecimals>::*)(yyjson_val *);
 
@@ -132,17 +132,17 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *event)
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *event)
+HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *restrict event)
 {
   yyjson_obj_iter iter = yyjson_obj_iter_with(event);
 
-  yyjson_val *side_obj = yyjson_obj_iter_get(&iter, "side");
-  yyjson_val *price_obj = yyjson_obj_iter_get(&iter, "price");
-  yyjson_val *qty_obj = yyjson_obj_iter_get(&iter, "remaining");
+  yyjson_val *restrict side_obj = yyjson_obj_iter_get(&iter, "side");
+  yyjson_val *restrict price_obj = yyjson_obj_iter_get(&iter, "price");
+  yyjson_val *restrict qty_obj = yyjson_obj_iter_get(&iter, "remaining");
 
-  const char *side_str = yyjson_get_str(side_obj);
-  const char *price_str = yyjson_get_str(price_obj);
-  const char *qty_str = yyjson_get_str(qty_obj);
+  const char *restrict side_str = yyjson_get_str(side_obj);
+  const char *restrict price_str = yyjson_get_str(price_obj);
+  const char *restrict qty_str = yyjson_get_str(qty_obj);
 
   const char side = side_str[0];
   const PriceType price(price_str);
@@ -158,7 +158,7 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *event)
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::handleTrade(UNUSED yyjson_val *event)
+HOT void Client<PriceDecimals, QtyDecimals>::handleTrade(UNUSED yyjson_val *restrict event)
 {
 }
 
@@ -172,5 +172,5 @@ HOT void Client<PriceDecimals, QtyDecimals>::broadcastTopOfBook(void)
     _order_book.getBestAskQty()
   };
 
-  _queue.push(msg);
+  _queue.push(std::move(msg));
 }

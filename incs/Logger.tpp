@@ -12,6 +12,7 @@ last edited: 2025-05-13 16:40:17
 #pragma once
 
 #include "Logger.hpp"
+#include "utils.hpp"
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 Logger<PriceDecimals, QtyDecimals>::Logger(std::string_view pair) noexcept :
@@ -37,11 +38,11 @@ void Logger<PriceDecimals, QtyDecimals>::start(void)
     try_log(top_of_book);
   }
 
-  std::unreachable();
+  //TODO std::unreachable() in c++23
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-void Logger<PriceDecimals, QtyDecimals>::try_log(const TopOfBook& top_of_book)
+void Logger<PriceDecimals, QtyDecimals>::try_log(const TopOfBook &top_of_book)
 {
   static thread_local PriceType cached_bid_price;
   static thread_local PriceType cached_ask_price;
@@ -71,7 +72,7 @@ void Logger<PriceDecimals, QtyDecimals>::try_log(const TopOfBook& top_of_book)
   try_format(bid_qty_changed, str_bid_qty, top_of_book.best_bid_qty);
   try_format(ask_qty_changed, str_ask_qty, top_of_book.best_ask_qty);
 
-  //ideally this would be async. or at least accumulated and flushed every N changes
+  //TODO ideally this would be async. or at least accumulated and flushed every N changes
   write(STDOUT_FILENO, str, sizeof(str));
 
   cached_ask_price = top_of_book.best_ask_price;
@@ -82,11 +83,11 @@ void Logger<PriceDecimals, QtyDecimals>::try_log(const TopOfBook& top_of_book)
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 template <uint8_t Decimals>
-void Logger<PriceDecimals, QtyDecimals>::try_format(const bool changed, char* buffer, const FixedPoint<Decimals>& fixed_point) noexcept
+void Logger<PriceDecimals, QtyDecimals>::try_format(const bool changed, char *restrict buffer, const FixedPoint<Decimals> &fixed_point) noexcept
 {
-  using Handler = void (*)(char*, const FixedPoint<Decimals>);
+  using Handler = void (*)(char *, FixedPoint<Decimals>);
 
-  static constexpr Handler no_op = [](char*, const FixedPoint<Decimals>) {};
+  static constexpr Handler no_op = [](char *, FixedPoint<Decimals>) {};
   static constexpr Handler format = FixedPoint<Decimals>::format;
 
   static constexpr std::array<Handler, 2> handlers = {no_op, format};

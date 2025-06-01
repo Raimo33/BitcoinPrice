@@ -20,3 +20,4 @@ last edited: 2025-05-13 14:30:09
 #define PREFETCH_R(x, priority)   __builtin_prefetch(x, 0, priority)
 #define PREFETCH_W(x, priority)   __builtin_prefetch(x, 1, priority)
 #define restrict                  __restrict__
+#define CACHELINE_SIZE           64

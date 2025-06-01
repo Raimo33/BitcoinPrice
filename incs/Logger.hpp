@@ -12,7 +12,8 @@ last edited: 2025-05-13 16:40:17
 #pragma once
 
 #include "ipq/SPSCQueue.hpp"
-#include "Client.hpp"
+#include "FixedPoint.hpp"
+#include "Messages.hpp"
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 class Logger
@@ -24,30 +25,21 @@ class Logger
     void start(void);
 
   private:
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
+    Logger(const Logger &) = delete;
+    Logger& operator=(const Logger &) = delete;
 
     using PriceType = FixedPoint<PriceDecimals>;
     using QtyType = FixedPoint<QtyDecimals>;
-
-    struct alignas(CACHELINE_SIZE) TopOfBook
-    {
-      PriceType best_bid_price;
-      PriceType best_ask_price;
-      QtyType best_bid_qty;
-      QtyType best_ask_qty;
-
-      bool operator==(const TopOfBook& other) const noexcept;
-    };
+    using TopOfBook = messages::TopOfBook<PriceType, QtyType>;
 
     std::string _pair;
     const int _shared_fd;
     ipq::SPSCQueue<TopOfBook, 64> _queue;
 
-    void try_log(const TopOfBook& top_of_book);
+    void try_log(const TopOfBook &top_of_book);
 
     template <uint8_t Decimals>
-    static void try_format(const bool changed, char* buffer, const FixedPoint<Decimals>& fixed_point) noexcept;
+    static void try_format(const bool changed, char *restrict buffer, const FixedPoint<Decimals> &fixed_point) noexcept;
 };
 
 #include "Logger.tpp"

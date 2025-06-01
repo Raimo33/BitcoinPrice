@@ -19,10 +19,11 @@ last edited: 2025-05-13 14:30:09
 #include <boost/beast.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/ssl.hpp>
-#include <ipq/SPSCQueue.hpp>
 
+#include "ipq/SPSCQueue.hpp"
 #include "OrderBook.hpp"
 #include "FixedPoint.hpp"
+#include "Messages.hpp"
 
 namespace net = boost::asio;
 namespace ssl = boost::asio::ssl;
@@ -40,19 +41,12 @@ class Client
     void run(void);
 
   private:
-    Client(const Client&) = delete;
-    Client& operator=(const Client&) = delete;
+    Client(const Client &) = delete;
+    Client& operator=(const Client &) = delete;
 
     using PriceType = FixedPoint<PriceDecimals>;
     using QtyType = FixedPoint<QtyDecimals>;
-
-    struct alignas(CACHELINE_SIZE) TopOfBook
-    {
-      PriceType best_bid_price;
-      PriceType best_ask_price;
-      QtyType best_bid_qty;
-      QtyType best_ask_qty;
-    };
+    using TopOfBook = messages::TopOfBook<PriceType, QtyType>;
 
     net::io_context _io_ctx;
     ssl::context _ssl_ctx;
@@ -67,9 +61,9 @@ class Client
 
     void processMarketData(std::string_view data);
 
-    void handleEvent(yyjson_val *event);
-    void handleChange(yyjson_val *event);
-    void handleTrade(yyjson_val *event);
+    void handleEvent(yyjson_val *restrict event);
+    void handleChange(yyjson_val *restrict event);
+    void handleTrade(yyjson_val *restrict event);
 
     void broadcastTopOfBook(void);
 };
