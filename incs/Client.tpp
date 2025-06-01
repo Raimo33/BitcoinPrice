@@ -86,6 +86,8 @@ HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
 
     buffer.consume(read_bytes);
   }
+
+  std::unreachable();
 }
 
 //TODO: YYJSON improvement proposal: parse only needed JSON fields, pre-set at compile time
