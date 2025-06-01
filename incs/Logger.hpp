@@ -18,13 +18,14 @@ template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 class Logger
 {
   public:
-
     Logger(std::string_view pair) noexcept;
     ~Logger() noexcept;
 
     void start(void);
 
   private:
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
 
     using PriceType = FixedPoint<PriceDecimals>;
     using QtyType = FixedPoint<QtyDecimals>;
@@ -39,8 +40,9 @@ class Logger
       bool operator==(const TopOfBook& other) const noexcept;
     };
 
-    std::string pair;
-    ipq::SPSCQueue<TopOfBook, 64> queue;
+    std::string _pair;
+    const int _shared_fd;
+    ipq::SPSCQueue<TopOfBook, 64> _queue;
 
     void try_log(const TopOfBook& top_of_book);
 

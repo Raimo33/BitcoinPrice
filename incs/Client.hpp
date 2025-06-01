@@ -34,13 +34,14 @@ template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 class Client
 {
   public:
-
-    Client(std::string_view pair) noexcept;
+    Client(std::string_view pair);
     ~Client() noexcept;
 
     void run(void);
 
   private:
+    Client(const Client&) = delete;
+    Client& operator=(const Client&) = delete;
 
     using PriceType = FixedPoint<PriceDecimals>;
     using QtyType = FixedPoint<QtyDecimals>;
@@ -53,12 +54,13 @@ class Client
       QtyType best_ask_qty;
     };
 
-    net::io_context io_ctx;
-    ssl::context ssl_ctx;
-    websocket::stream<beast::ssl_stream<net::ip::tcp::socket>> ws_stream;
-    std::string pair;
-    ipq::SPSCQueue<TopOfBook, 64> queue;
-    OrderBook<PriceType, QtyType> order_book;
+    net::io_context _io_ctx;
+    ssl::context _ssl_ctx;
+    websocket::stream<beast::ssl_stream<net::ip::tcp::socket>> _ws_stream;
+    std::string _pair;
+    const int _shared_fd;
+    ipq::SPSCQueue<TopOfBook, 64> _queue;
+    OrderBook<PriceType, QtyType> _order_book;
 
     void connect(void);
     void listen(void);

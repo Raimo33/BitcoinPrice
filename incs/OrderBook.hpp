@@ -34,6 +34,8 @@ class OrderBook
     inline void setAskQty(const PriceType price, const QtyType qty);
 
   private:
+    OrderBook(const OrderBook &) = delete;
+    OrderBook &operator=(const OrderBook &) = delete;
 
     struct PriceLevels
     {
@@ -41,8 +43,8 @@ class OrderBook
       std::vector<QtyType> cumulative_qtys;
     };
 
-    PriceLevels bids;
-    PriceLevels asks;
+    PriceLevels _bids;
+    PriceLevels _asks;
 
     template<typename Comparator>
     void setQty(PriceLevels &levels, const PriceType price, const QtyType qty);

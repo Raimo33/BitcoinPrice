@@ -15,25 +15,29 @@ last edited: 2025-05-13 16:40:17
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 Logger<PriceDecimals, QtyDecimals>::Logger(std::string_view pair) noexcept :
-  pair(pair),
-  queue(this->pair + "_top_of_book") {}
+  _pair(pair),
+  _shared_fd(utils::get_shared_memory_fd(pair)),
+  _queue(_shared_fd) {}
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 Logger<PriceDecimals, QtyDecimals>::~Logger(void) noexcept
 {
+  close(_shared_fd);
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 void Logger<PriceDecimals, QtyDecimals>::start(void)
 {
+  TopOfBook top_of_book;
+
   while (true)
   {
-    if (queue.isEmpty())
-      continue;
-
-    TopOfBook top_of_book = queue.pop();
+    while (!_queue.pop(top_of_book))
+      ;
     try_log(top_of_book);
   }
+
+  std::unreachable();
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
@@ -67,6 +71,7 @@ void Logger<PriceDecimals, QtyDecimals>::try_log(const TopOfBook& top_of_book)
   try_format(bid_qty_changed, str_bid_qty, top_of_book.best_bid_qty);
   try_format(ask_qty_changed, str_ask_qty, top_of_book.best_ask_qty);
 
+  //ideally this would be async. or at least accumulated and flushed every N changes
   write(STDOUT_FILENO, str, sizeof(str));
 
   cached_ask_price = top_of_book.best_ask_price;

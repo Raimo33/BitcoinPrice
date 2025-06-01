@@ -18,18 +18,20 @@ last edited: 2025-05-13 14:30:09
 #include "utils.hpp"
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-COLD Client<PriceDecimals, QtyDecimals>::Client(std::string_view pair) noexcept :
-  ssl_ctx(ssl::context::tlsv12_client),
-  ws_stream(io_ctx, ssl_ctx),
-  pair(pair),
-  queue(this->pair + "_top_of_book")
+COLD Client<PriceDecimals, QtyDecimals>::Client(std::string_view pair) :
+  _ssl_ctx(ssl::context::tlsv12_client),
+  _ws_stream(_io_ctx, _ssl_ctx),
+  _pair(pair),
+  _shared_fd(utils::get_shared_memory_fd(pair)),
+  _queue(_shared_fd)
 {
-  ssl_ctx.set_verify_mode(ssl::verify_none);
+  _ssl_ctx.set_verify_mode(ssl::verify_none);
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 COLD Client<PriceDecimals, QtyDecimals>::~Client(void) noexcept
 {
+  close(_shared_fd);
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
@@ -44,14 +46,14 @@ COLD void Client<PriceDecimals, QtyDecimals>::connect(void)
 {
   const std::string host = "api.gemini.com";
   const std::string port = "443";
-  const std::string path = "/v1/marketdata/" + pair;
+  const std::string path = "/v1/marketdata/" + _pair;
 
-  ip::tcp::resolver resolver(io_ctx);
+  ip::tcp::resolver resolver(_io_ctx);
   auto const results = resolver.resolve(host, port);
 
-  net::connect(ws_stream.next_layer().next_layer(), results.begin(), results.end());
+  net::connect(_ws_stream.next_layer().next_layer(), results.begin(), results.end());
 
-  auto &socket = beast::get_lowest_layer(ws_stream);
+  auto &socket = beast::get_lowest_layer(_ws_stream);
   socket.set_option(net::ip::tcp::no_delay(true));
   socket.set_option(net::socket_base::keep_alive(true));
   socket.native_non_blocking(true);
@@ -60,8 +62,8 @@ COLD void Client<PriceDecimals, QtyDecimals>::connect(void)
   socket.set_option(net::socket_base::reuse_address(true));
   socket.set_option(net::socket_base::keep_alive(true));
 
-  ws_stream.next_layer().handshake(ssl::stream_base::client);
-  ws_stream.handshake(host, path);
+  _ws_stream.next_layer().handshake(ssl::stream_base::client);
+  _ws_stream.handshake(host, path);
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
@@ -70,13 +72,13 @@ HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
   beast::flat_buffer buffer;
   buffer.prepare(16 * 1024);
 
-  ws_stream.auto_fragment(false);
-  ws_stream.binary(true);
-  ws_stream.read_message_max(0);
+  _ws_stream.auto_fragment(false);
+  _ws_stream.binary(true);
+  _ws_stream.read_message_max(0);
 
   while (true)
   {
-    const std::size_t read_bytes = ws_stream.read(buffer);
+    const std::size_t read_bytes = _ws_stream.read(buffer);
 
     //TODO better way
     std::string_view data{static_cast<const char*>(buffer.data().data()), read_bytes};
@@ -146,9 +148,9 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *event)
 
   //TODO make branchless (hard to predict 50/50)
   if (side == 'b')
-    order_book.setBidQty(price, qty);
+    _order_book.setBidQty(price, qty);
   else
-    order_book.setAskQty(price, qty);
+    _order_book.setAskQty(price, qty);
 
   broadcastTopOfBook();
 }
@@ -162,11 +164,11 @@ template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 HOT void Client<PriceDecimals, QtyDecimals>::broadcastTopOfBook(void)
 {
   TopOfBook msg{
-    order_book.getBestBidPrice(),
-    order_book.getBestAskPrice(),
-    order_book.getBestBidQty(),
-    order_book.getBestAskQty()
+    _order_book.getBestBidPrice(),
+    _order_book.getBestAskPrice(),
+    _order_book.getBestBidQty(),
+    _order_book.getBestAskQty()
   };
 
-  queue.push(msg);
+  _queue.push(msg);
 }

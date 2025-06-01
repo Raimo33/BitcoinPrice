@@ -19,16 +19,16 @@ last edited: 2025-05-11 21:29:03
 template<typename PriceType, typename QtyType>
 COLD OrderBook<PriceType, QtyType>::OrderBook(void) noexcept
 {
-  bids.prices.push_back(INT32_MIN);
-  asks.prices.push_back(INT32_MAX);
-  bids.cumulative_qtys.push_back(0);
-  asks.cumulative_qtys.push_back(0);
+  _bids.prices.push_back(INT32_MIN);
+  _asks.prices.push_back(INT32_MAX);
+  _bids.cumulative_qtys.push_back(0);
+  _asks.cumulative_qtys.push_back(0);
 }
 
 template<typename PriceType, typename QtyType>
 COLD OrderBook<PriceType, QtyType>::OrderBook(OrderBook &&other) noexcept :
-  bids(std::move(other.bids)),
-  asks(std::move(other.asks))
+  _bids(std::move(other._bids)),
+  _asks(std::move(other._asks))
 {
 }
 

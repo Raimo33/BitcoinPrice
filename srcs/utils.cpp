@@ -13,6 +13,8 @@ last edited: 2025-05-13 14:30:09
 #include <stdexcept>
 #include <boost/exception/all.hpp>
 #include <csignal>
+#include <sys/mman.h>
+#include <fcntl.h>
 
 #include "utils.hpp"
 #include "macros.hpp"
@@ -45,6 +47,15 @@ COLD void setup_signal_handler(void)
 
   if (error)
     throw_exception("Failed to set signal handler");
+}
+
+int get_shared_memory_fd(const std::string_view name)
+{
+  const int fd = shm_open(name.data(), O_RDWR | O_CREAT, 0666);
+  if (fd == -1)
+    throw_exception("Failed to create shared memory region");
+
+  return fd;
 }
 
 }
