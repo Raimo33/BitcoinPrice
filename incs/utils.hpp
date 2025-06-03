@@ -13,8 +13,6 @@ last edited: 2025-05-13 16:40:17
 
 #include <string_view>
 
-#include "FixedPoint.hpp"
-
 namespace utils
 {
   [[noreturn]] void throw_exception(const std::string_view msg);

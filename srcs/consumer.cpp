@@ -16,6 +16,6 @@ int main(void)
 {
   utils::setup_signal_handler();
 
-  Logger<2, 8> logger("BTCUSDT");
+  Logger logger("BTCUSD");
   logger.start();
 }

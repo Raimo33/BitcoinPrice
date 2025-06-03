@@ -23,10 +23,10 @@ last edited: 2025-05-23 18:02:03
 
 namespace ipq
 {
-  
+
 namespace utils
 {
-  [[noreturn]] [[gnu::noinline]] void throw_error(std::string_view message)
+  [[noreturn]] [[gnu::noinline]] inline void throw_error(std::string_view message)
   {
     #ifdef __EXCEPTIONS
       throw std::runtime_error(message.data());

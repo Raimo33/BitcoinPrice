@@ -22,7 +22,6 @@ last edited: 2025-05-13 14:30:09
 
 #include "ipq/SPSCQueue.hpp"
 #include "OrderBook.hpp"
-#include "FixedPoint.hpp"
 #include "Messages.hpp"
 
 namespace net = boost::asio;
@@ -31,7 +30,6 @@ namespace beast = boost::beast;
 namespace ip = boost::asio::ip;
 namespace websocket = beast::websocket;
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 class Client
 {
   public:
@@ -44,9 +42,7 @@ class Client
     Client(const Client &) = delete;
     Client& operator=(const Client &) = delete;
 
-    using PriceType = FixedPoint<PriceDecimals>;
-    using QtyType = FixedPoint<QtyDecimals>;
-    using TopOfBook = messages::TopOfBook<PriceType, QtyType>;
+    using TopOfBook = messages::TopOfBook;
 
     net::io_context _io_ctx;
     ssl::context _ssl_ctx;
@@ -54,7 +50,7 @@ class Client
     std::string _pair;
     const int _shared_fd;
     ipq::SPSCQueue<TopOfBook, 64> _queue;
-    OrderBook<PriceType, QtyType> _order_book;
+    OrderBook<float, float> _order_book;
 
     void connect(void);
     void listen(void);
@@ -67,5 +63,3 @@ class Client
 
     void broadcastTopOfBook(void);
 };
-
-#include "Client.tpp"

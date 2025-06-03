@@ -9,16 +9,13 @@ last edited: 2025-05-13 14:30:09
 
 ================================================================================*/
 
-#pragma once
-
 #include <yyjson.h>
 
 #include "Client.hpp"
 #include "macros.hpp"
 #include "utils.hpp"
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-COLD Client<PriceDecimals, QtyDecimals>::Client(std::string_view pair) :
+COLD Client::Client(std::string_view pair) :
   _ssl_ctx(ssl::context::tlsv12_client),
   _ws_stream(_io_ctx, _ssl_ctx),
   _pair(pair),
@@ -28,22 +25,20 @@ COLD Client<PriceDecimals, QtyDecimals>::Client(std::string_view pair) :
   _ssl_ctx.set_verify_mode(ssl::verify_none);
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-COLD Client<PriceDecimals, QtyDecimals>::~Client(void) noexcept
+COLD Client::~Client(void) noexcept
 {
+  //TODO clear the queue
   close(_shared_fd);
   utils::destroy_shared_memory(_pair);
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-void Client<PriceDecimals, QtyDecimals>::run(void)
+void Client::run(void)
 {
   connect();
   listen();
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-COLD void Client<PriceDecimals, QtyDecimals>::connect(void)
+COLD void Client::connect(void)
 {
   const std::string host = "api.gemini.com";
   const std::string port = "443";
@@ -67,8 +62,7 @@ COLD void Client<PriceDecimals, QtyDecimals>::connect(void)
   _ws_stream.handshake(host, path);
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
+HOT void Client::listen(void)
 {
   beast::flat_buffer buffer;
   buffer.prepare(16 * 1024);
@@ -92,8 +86,7 @@ HOT void Client<PriceDecimals, QtyDecimals>::listen(void)
 }
 
 //TODO: YYJSON improvement proposal: parse only needed JSON fields, pre-set at compile time
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view data)
+HOT void Client::processMarketData(std::string_view data)
 {
   yyjson_doc *doc = yyjson_read_opts(const_cast<char*>(data.data()), data.size(), 0, nullptr, nullptr);
   yyjson_val *root = yyjson_doc_get_root(doc);
@@ -111,16 +104,15 @@ HOT void Client<PriceDecimals, QtyDecimals>::processMarketData(std::string_view 
   yyjson_doc_free(doc);
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *restrict event)
+HOT void Client::handleEvent(yyjson_val *restrict event)
 {
-  using Handler = void (Client<PriceDecimals, QtyDecimals>::*)(yyjson_val *);
+  using Handler = void (Client::*)(yyjson_val *);
 
   static constexpr uint8_t size = 't' + 1;
   static constexpr std::array<Handler, size> handlers = [](){
     std::array<Handler, size> handlers{};
-    handlers['c'] = &Client<PriceDecimals, QtyDecimals>::handleChange;
-    handlers['t'] = &Client<PriceDecimals, QtyDecimals>::handleTrade;
+    handlers['c'] = &Client::handleChange;
+    handlers['t'] = &Client::handleTrade;
     return handlers;
   }();
 
@@ -132,8 +124,7 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleEvent(yyjson_val *restrict ev
   (this->*handlers[type])(event);
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *restrict event)
+HOT void Client::handleChange(yyjson_val *restrict event)
 {
   yyjson_obj_iter iter = yyjson_obj_iter_with(event);
 
@@ -146,8 +137,8 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *restrict e
   const char *restrict qty_str = yyjson_get_str(qty_obj);
 
   const char side = side_str[0];
-  const PriceType price(price_str);
-  const QtyType qty(qty_str);
+  const float price = std::stof(price_str);
+  const float qty = std::stof(qty_str); 
 
   //TODO make branchless (hard to predict 50/50)
   if (side == 'b')
@@ -158,14 +149,14 @@ HOT void Client<PriceDecimals, QtyDecimals>::handleChange(yyjson_val *restrict e
   broadcastTopOfBook();
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::handleTrade(UNUSED yyjson_val *restrict event)
+HOT void Client::handleTrade(UNUSED yyjson_val *restrict event)
 {
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-HOT void Client<PriceDecimals, QtyDecimals>::broadcastTopOfBook(void)
+HOT void Client::broadcastTopOfBook(void)
 {
+  static thread_local TopOfBook cached_msg;
+
   TopOfBook msg{
     _order_book.getBestBidPrice(),
     _order_book.getBestAskPrice(),
@@ -173,5 +164,9 @@ HOT void Client<PriceDecimals, QtyDecimals>::broadcastTopOfBook(void)
     _order_book.getBestAskQty()
   };
 
+  if (cached_msg == msg) [[unlikely]]
+    return;
+
+  cached_msg = msg;
   _queue.push(std::move(msg));
 }

@@ -7,11 +7,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(Producer
   srcs/producer.cpp
+  srcs/Client.cpp
   srcs/utils.cpp
 )
 
 add_executable(Consumer
   srcs/consumer.cpp
+  srcs/Logger.cpp
   srcs/utils.cpp
 )
 

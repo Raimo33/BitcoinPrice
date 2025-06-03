@@ -9,25 +9,22 @@ last edited: 2025-05-13 16:40:17
 
 ================================================================================*/
 
-#pragma once
+#include <format>
 
 #include "Logger.hpp"
 #include "utils.hpp"
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-Logger<PriceDecimals, QtyDecimals>::Logger(std::string_view pair) noexcept :
+Logger::Logger(std::string_view pair) noexcept :
   _pair(pair),
   _shared_fd(utils::get_shared_memory_fd(_pair)),
   _queue(_shared_fd) {}
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-Logger<PriceDecimals, QtyDecimals>::~Logger(void) noexcept
+Logger::~Logger(void) noexcept
 {
   close(_shared_fd);
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-void Logger<PriceDecimals, QtyDecimals>::start(void)
+void Logger::start(void)
 {
   TopOfBook top_of_book;
 
@@ -41,15 +38,12 @@ void Logger<PriceDecimals, QtyDecimals>::start(void)
   //TODO std::unreachable() in c++23
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
-void Logger<PriceDecimals, QtyDecimals>::try_log(const TopOfBook &top_of_book)
+void Logger::try_log(const TopOfBook &top_of_book)
 {
-  static thread_local PriceType cached_bid_price;
-  static thread_local PriceType cached_ask_price;
-  static thread_local QtyType cached_bid_qty;
-  static thread_local QtyType cached_ask_qty;
-
-  static_assert(sizeof(FixedPoint<PriceDecimals>::value) == sizeof(int32_t), "FixedPoint::value must be 4 bytes");
+  static thread_local float cached_bid_price;
+  static thread_local float cached_ask_price;
+  static thread_local float cached_bid_qty;
+  static thread_local float cached_ask_qty;
 
   static thread_local char str[] = "0000000000 0000000000 - 0000000000 0000000000\n";
 
@@ -67,10 +61,10 @@ void Logger<PriceDecimals, QtyDecimals>::try_log(const TopOfBook &top_of_book)
   if (!anything_changed) [[unlikely]]
     return;
 
-  try_format(bid_price_changed, str_bid_price, top_of_book.best_bid_price);
-  try_format(ask_price_changed, str_ask_price, top_of_book.best_ask_price);
-  try_format(bid_qty_changed, str_bid_qty, top_of_book.best_bid_qty);
-  try_format(ask_qty_changed, str_ask_qty, top_of_book.best_ask_qty);
+  try_format<2>(bid_price_changed, str_bid_price, top_of_book.best_bid_price);
+  try_format<2>(ask_price_changed, str_ask_price, top_of_book.best_ask_price);
+  try_format<8>(bid_qty_changed, str_bid_qty, top_of_book.best_bid_qty);
+  try_format<8>(ask_qty_changed, str_ask_qty, top_of_book.best_ask_qty);
 
   //TODO ideally this would be async. or at least accumulated and flushed every N changes
   write(STDOUT_FILENO, str, sizeof(str));
@@ -81,15 +75,16 @@ void Logger<PriceDecimals, QtyDecimals>::try_log(const TopOfBook &top_of_book)
   cached_bid_qty = top_of_book.best_bid_qty;
 }
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 template <uint8_t Decimals>
-void Logger<PriceDecimals, QtyDecimals>::try_format(const bool changed, char *restrict buffer, const FixedPoint<Decimals> &fixed_point) noexcept
+void Logger::try_format(const bool changed, char *restrict buffer, const float value) noexcept
 {
-  using Handler = void (*)(char *, FixedPoint<Decimals>);
+  using Handler = void (*)(char *, float);
 
-  static constexpr Handler no_op = [](char *, FixedPoint<Decimals>) {};
-  static constexpr Handler format = FixedPoint<Decimals>::format;
+  static constexpr Handler no_op = [](char *, float) {};
+  static constexpr Handler format = [](char *restrict buffer, float value) {
+    std::format_to(buffer, "{:.{}f}", value, Decimals);
+  };
 
   static constexpr std::array<Handler, 2> handlers = {no_op, format};
-  handlers[changed](buffer, fixed_point);
+  handlers[changed](buffer, value);
 }

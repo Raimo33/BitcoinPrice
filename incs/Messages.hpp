@@ -7,13 +7,20 @@ namespace messages
 
 #pragma pack(push, 1)
 
-template <typename PriceType, typename QtyType>
+//TODO use fixed point numbers for faster construction/printing/operations. But since gemini API uses floats, I will use floats too.
 struct alignas(CACHELINE_SIZE) TopOfBook
 {
-  PriceType best_bid_price;
-  PriceType best_ask_price;
-  QtyType best_bid_qty;
-  QtyType best_ask_qty;
+  float best_bid_price;
+  float best_ask_price;
+  float best_bid_qty;
+  float best_ask_qty;
+
+  bool operator==(const TopOfBook &other) const noexcept {
+    return (best_bid_price == other.best_bid_price) &
+           (best_ask_price == other.best_ask_price) &
+           (best_bid_qty == other.best_bid_qty) &
+           (best_ask_qty == other.best_ask_qty);
+  }
 };
 
 #pragma pack(pop)

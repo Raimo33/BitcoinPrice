@@ -12,10 +12,8 @@ last edited: 2025-05-13 16:40:17
 #pragma once
 
 #include "ipq/SPSCQueue.hpp"
-#include "FixedPoint.hpp"
 #include "Messages.hpp"
 
-template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 class Logger
 {
   public:
@@ -28,9 +26,7 @@ class Logger
     Logger(const Logger &) = delete;
     Logger& operator=(const Logger &) = delete;
 
-    using PriceType = FixedPoint<PriceDecimals>;
-    using QtyType = FixedPoint<QtyDecimals>;
-    using TopOfBook = messages::TopOfBook<PriceType, QtyType>;
+    using TopOfBook = messages::TopOfBook;
 
     std::string _pair;
     const int _shared_fd;
@@ -39,7 +35,5 @@ class Logger
     void try_log(const TopOfBook &top_of_book);
 
     template <uint8_t Decimals>
-    static void try_format(const bool changed, char *restrict buffer, const FixedPoint<Decimals> &fixed_point) noexcept;
+    static void try_format(const bool changed, char *restrict buffer, const float value) noexcept;
 };
-
-#include "Logger.tpp"

@@ -16,6 +16,6 @@ int main(void)
 {
   utils::setup_signal_handler();
 
-  Client<2, 8> client("BTCUSDT");
+  Client client("BTCUSD");
   client.run();
 }

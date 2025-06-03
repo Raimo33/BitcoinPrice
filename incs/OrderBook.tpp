@@ -19,8 +19,9 @@ last edited: 2025-05-11 21:29:03
 template<typename PriceType, typename QtyType>
 COLD OrderBook<PriceType, QtyType>::OrderBook(void) noexcept
 {
-  _bids.prices.push_back(INT32_MIN);
-  _asks.prices.push_back(INT32_MAX);
+  //TODO initialize bids with MIN and asks with MAX for better safety (now possible segfault if new order at negative price)
+  _bids.prices.push_back(0); //std::numeric_limits<PriceType>::min());
+  _asks.prices.push_back(0); //std::numeric_limits<PriceType>::max());
   _bids.cumulative_qtys.push_back(0);
   _asks.cumulative_qtys.push_back(0);
 }
