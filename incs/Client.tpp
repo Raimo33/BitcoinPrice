@@ -32,6 +32,7 @@ template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 COLD Client<PriceDecimals, QtyDecimals>::~Client(void) noexcept
 {
   close(_shared_fd);
+  utils::destroy_shared_memory(_pair);
 }
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>

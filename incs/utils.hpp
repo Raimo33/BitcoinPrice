@@ -20,4 +20,5 @@ namespace utils
   [[noreturn]] void throw_exception(const std::string_view msg);
   void setup_signal_handler(void);
   int get_shared_memory_fd(const std::string_view name);
+  void destroy_shared_memory(const std::string_view name);
 }

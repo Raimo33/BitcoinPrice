@@ -49,13 +49,19 @@ COLD void setup_signal_handler(void)
     throw_exception("Failed to set signal handler");
 }
 
-int get_shared_memory_fd(const std::string_view name)
+COLD int get_shared_memory_fd(const std::string_view name)
 {
   const int fd = shm_open(name.data(), O_RDWR | O_CREAT, 0666);
   if (fd == -1)
     throw_exception("Failed to create shared memory region");
 
   return fd;
+}
+
+COLD void destroy_shared_memory(const std::string_view name)
+{
+  if (shm_unlink(name.data()) == -1)
+    throw_exception("Failed to destroy shared memory region");
 }
 
 }

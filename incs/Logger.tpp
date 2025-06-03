@@ -17,7 +17,7 @@ last edited: 2025-05-13 16:40:17
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
 Logger<PriceDecimals, QtyDecimals>::Logger(std::string_view pair) noexcept :
   _pair(pair),
-  _shared_fd(utils::get_shared_memory_fd(pair)),
+  _shared_fd(utils::get_shared_memory_fd(_pair)),
   _queue(_shared_fd) {}
 
 template <uint8_t PriceDecimals, uint8_t QtyDecimals>
